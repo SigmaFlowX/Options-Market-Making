@@ -4,13 +4,18 @@ import uuid
 import websocket
 import json
 import threading
+import os
+
+BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+TOKEN_FILE = os.path.join(DATA_DIR, "bks_token.txt")
 
 last_candles = {}
 order_books = {}
 
 
 def get_token_from_txt_file():
-    file = open("token.txt")
+    file = open(TOKEN_FILE)
     token = file.read()
     return token
 
