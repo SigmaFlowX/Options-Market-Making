@@ -279,7 +279,30 @@ def get_positions(token):
 
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
-    print(get_candles(access_token, "SBER", start_date="2025-01-01", end_date="2025-05-01", timeframe="MN"))
+
+    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    params = {
+        "type": "OPTIONS",
+        "baseAssetTicker": "SBER",
+        "size": 10
+    }
+
+    response = requests.get(url, headers=headers, params=params).json()
+    print(json.dumps(response, indent=4, ensure_ascii=False))
+
+    print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
+    # SR - SBER
+    # 300 - strike price
+    # C - call
+    # B - month (A - January, B - February)
+    # 0 - last digit of year (6 for 2026)
+
+
 
 
 
