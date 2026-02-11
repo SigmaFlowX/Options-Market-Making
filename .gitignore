@@ -1,0 +1,38 @@
+# ==== Python ====
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+
+# ==== Virtual Environments ====
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ==== Jupyter ====
+.ipynb_checkpoints/
+
+# ==== Data files ====
+*.csv
+*.h5
+*.sqlite
+*.db
+
+# ==== IDE / Editors ====
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# ==== Logs / Temp ====
+*.log
+*.tmp
+*.bak
+*.out
+
+# ==== OS files ====
+.DS_Store
+Thumbs.db
