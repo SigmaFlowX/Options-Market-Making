@@ -78,9 +78,14 @@ def get_current_price(token, ticker, class_code = "TQBR"):
         print("Failed to get current price:", response.status_code, response.text)
         return None
 
-def get_last_candles(token, ticker, since, class_code="TQBR", timeframe = "M1"):
+def get_candles(token, ticker, start_date, end_date, class_code="TQBR", timeframe = "M1"):
     url = "https://be.broker.ru/trade-api-market-data-connector/api/v1/candles-chart"
 
+    start_date = datetime.fromisoformat(start_date).astimezone(timezone.utc)
+    start_date = start_date.isoformat(timespec="milliseconds")
+
+    end_date = datetime.fromisoformat(end_date).astimezone(timezone.utc)
+    end_date = end_date.isoformat(timespec="milliseconds")
 
     headers = {
         "Accept": "application/json",
@@ -90,8 +95,8 @@ def get_last_candles(token, ticker, since, class_code="TQBR", timeframe = "M1"):
     payload = {
         "classCode": class_code,
         "ticker": ticker,
-        "startDate": since,
-        "endDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "startDate": start_date,
+        "endDate": end_date,
         "timeFrame": timeframe
     }
 
@@ -274,7 +279,7 @@ def get_positions(token):
 
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
-    print(get_last_candles(access_token, "SBER", since="2025-12-20", timeframe="MN")[0])
+    print(get_candles(access_token, "SBER", start_date="2025-01-01", end_date="2025-05-01", timeframe="MN"))
 
 
 
