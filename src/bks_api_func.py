@@ -5,6 +5,8 @@ import websocket
 import json
 import threading
 import os
+import pandas as pd
+import time
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -265,6 +267,36 @@ def get_positions(token):
     response = requests.request("GET", url, headers=headers, data=payload)
     return response.json()
 
+def get_option_settlement_date_by_ticker(token, stock_ticker, option_ticker, sleep_time=5):
+    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+
+    page = 0
+    results = []
+    while True:
+        params = {
+            "type": "OPTIONS",
+            "baseAssetTicker": stock_ticker,
+            "size": 100,
+            "page":page
+        }
+
+        response = requests.get(url, headers=headers, params=params).json()
+        if len(response) == 0:
+            break
+        results.extend(response)
+        page += 1
+        print(page)
+        time.sleep(sleep_time)
+
+    df = pd.DataFrame(results)
+    settlement_date = df.loc[df["ticker"] == option_ticker, "maturityDate"].values[0]
+    date = datetime.strptime(settlement_date, "%Y%m%d")
+    return date
 
 # Состояние заявки:
 # 0 — Новая
@@ -279,23 +311,10 @@ def get_positions(token):
 
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
+    print(get_option_settlement_date_by_ticker(access_token, "SBER", "SR300CC6"))
 
-    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
-
-    headers = {
-        "Accept": "application/json",
-        "Authorization": f"Bearer {access_token}"
-    }
-    params = {
-        "type": "OPTIONS",
-        "baseAssetTicker": "SBER",
-        "size": 10
-    }
-
-    response = requests.get(url, headers=headers, params=params).json()
-    print(json.dumps(response, indent=4, ensure_ascii=False))
-
-    print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
+    #
+    # print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
     # SR - SBER
     # 300 - strike price
     # C - call
