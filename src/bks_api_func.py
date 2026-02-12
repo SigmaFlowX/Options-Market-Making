@@ -39,7 +39,6 @@ def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5):
             break
         results.extend(response)
         page += 1
-        print(page)
         time.sleep(sleep_time)
 
     df = pd.DataFrame(results)
