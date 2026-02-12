@@ -16,6 +16,37 @@ last_candles = {}
 order_books = {}
 
 
+def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5):
+    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+
+    page = 0
+    results = []
+    while True:
+        params = {
+            "type": "OPTIONS",
+            "baseAssetTicker": stock_ticker,
+            "size": 100,
+            "page":page
+        }
+
+        response = requests.get(url, headers=headers, params=params).json()
+        if len(response) == 0:
+            break
+        results.extend(response)
+        page += 1
+        print(page)
+        time.sleep(sleep_time)
+
+    df = pd.DataFrame(results)
+    settlement_date = df.loc[df["ticker"] == option_ticker, "maturityDate"].values[0]
+    date = datetime.strptime(settlement_date, "%Y%m%d")
+    return date
+
 def get_token_from_txt_file():
     file = open(TOKEN_FILE)
     token = file.read()
@@ -267,36 +298,7 @@ def get_positions(token):
     response = requests.request("GET", url, headers=headers, data=payload)
     return response.json()
 
-def get_option_settlement_date_by_ticker(token, stock_ticker, option_ticker, sleep_time=5):
-    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
 
-    headers = {
-        "Accept": "application/json",
-        "Authorization": f"Bearer {token}"
-    }
-
-    page = 0
-    results = []
-    while True:
-        params = {
-            "type": "OPTIONS",
-            "baseAssetTicker": stock_ticker,
-            "size": 100,
-            "page":page
-        }
-
-        response = requests.get(url, headers=headers, params=params).json()
-        if len(response) == 0:
-            break
-        results.extend(response)
-        page += 1
-        print(page)
-        time.sleep(sleep_time)
-
-    df = pd.DataFrame(results)
-    settlement_date = df.loc[df["ticker"] == option_ticker, "maturityDate"].values[0]
-    date = datetime.strptime(settlement_date, "%Y%m%d")
-    return date
 
 # Состояние заявки:
 # 0 — Новая
@@ -309,17 +311,17 @@ def get_option_settlement_date_by_ticker(token, stock_ticker, option_ticker, sle
 # 9 — Заменяется (например, если вы изменяли заявку)
 # 10 — Ожидает подтверждения новой заявки
 
-if __name__ == "__main__":
-    access_token = authorize(get_token_from_txt_file())
-    print(get_option_settlement_date_by_ticker(access_token, "SBER", "SR300CC6"))
-
-    #
-    # print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
-    # SR - SBER
-    # 300 - strike price
-    # C - call
-    # B - month (A - January, B - February)
-    # 0 - last digit of year (6 for 2026)
+# if __name__ == "__main__":
+#     access_token = authorize(get_token_from_txt_file())
+#     print(get_option_maturity_date_by_ticker(access_token, "SBER", "SR300CC6"))
+#
+#     #
+#     # print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
+#     # SR - SBER
+#     # 300 - strike price
+#     # C - call
+#     # B - month (A - January, B - February)
+#     # 0 - last digit of year (6 for 2026)
 
 
 
