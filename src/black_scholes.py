@@ -1,6 +1,10 @@
 import QuantLib as ql
 
 def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, expiry_date, eval_date):
+
+    expiry_date = ql.Date(expiry_date.day, expiry_date.month, expiry_date.year)
+    eval_date = ql.Date(eval_date.day, eval_date.month, eval_date.year)
+
     calendar = ql.TARGET()
     day_count = ql.Actual365Fixed()
     ql.Settings.instance().evaluationDate = eval_date
