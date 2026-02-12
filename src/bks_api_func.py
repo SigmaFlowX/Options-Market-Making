@@ -16,13 +16,14 @@ last_candles = {}
 order_books = {}
 
 
-def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5):
+def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5, size=100):
     url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
 
-    headers = {
+    session = requests.Session()
+    session.headers.update({
         "Accept": "application/json",
         "Authorization": f"Bearer {token}"
-    }
+    })
 
     page = 0
     results = []
@@ -30,17 +31,22 @@ def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5):
         params = {
             "type": "OPTIONS",
             "baseAssetTicker": stock_ticker,
-            "size": 100,
+            "size": size,
             "page":page
         }
 
-        response = requests.get(url, headers=headers, params=params).json()
-        if len(response) == 0:
-            break
-        results.extend(response)
-        page += 1
-        time.sleep(sleep_time)
+        response = session.get(url, params=params, timeout=10)
+        response.raise_for_status()
 
+        data = response.json()
+        if not data:
+            break
+
+        results.extend(data)
+        page += 1
+        print(page, end=' ')
+        time.sleep(sleep_time)
+    print("")
     df = pd.DataFrame(results)
     settlement_date = df.loc[df["ticker"] == option_ticker, "maturityDate"].values[0]
     date = datetime.strptime(settlement_date, "%Y%m%d")
