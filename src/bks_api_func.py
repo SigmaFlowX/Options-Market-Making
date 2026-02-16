@@ -300,7 +300,7 @@ def start_order_book_ws(token, ticker, class_code="TQBR", depth=20):
     thread = threading.Thread(target=order_book_ws)
     thread.start()
 
-def get_positions(token):
+def get_raw_positions(token):
     url = "https://be.broker.ru/trade-api-bff-portfolio/api/v1/portfolio"
 
     payload = {}
@@ -312,8 +312,18 @@ def get_positions(token):
     response = requests.request("GET", url, headers=headers, data=payload)
     return response.json()
 
+def get_current_inventory(token):
+    inventory = {}
+    positions = get_raw_positions(token)
 
+    for position in positions:
+        ticker = position['ticker']
+        if ticker in inventory:
+            break
+        size = position['quantity']
+        inventory[ticker] = size
 
+    return inventory
 # Состояние заявки:
 # 0 — Новая
 # 1 — Частично исполнена
@@ -327,11 +337,9 @@ def get_positions(token):
 
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
-    start_order_book_ws(access_token, ticker="SR300CB6", class_code="OPTSPOT", depth=1)
 
-    time.sleep(5)
-    print(order_books['SR300CB6'])
-    print(get_last_bid_and_ask("SR300CB6"))
+    print(get_raw_positions(access_token))
+    print(get_current_inventory(access_token))
 
 #
 #     #
