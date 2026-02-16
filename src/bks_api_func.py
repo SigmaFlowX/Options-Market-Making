@@ -15,6 +15,15 @@ TOKEN_FILE = os.path.join(DATA_DIR, "bks_token.txt")
 last_candles = {}
 order_books = {}
 
+def get_last_bid_and_ask(ticker):
+    if not order_books:
+        raise ValueError("No data")
+
+    order_book = order_books[ticker]
+    bid = order_book['bids'][0]['price']
+    ask = order_book['asks'][0]['price']
+
+    return {'ask':ask, 'bid':bid}
 
 def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5, size=100):
     url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
@@ -316,9 +325,14 @@ def get_positions(token):
 # 9 — Заменяется (например, если вы изменяли заявку)
 # 10 — Ожидает подтверждения новой заявки
 
-# if __name__ == "__main__":
-#     access_token = authorize(get_token_from_txt_file())
-#     print(get_option_maturity_date_by_ticker(access_token, "SBER", "SR300CC6"))
+if __name__ == "__main__":
+    access_token = authorize(get_token_from_txt_file())
+    start_order_book_ws(access_token, ticker="SR300CB6", class_code="OPTSPOT", depth=1)
+
+    time.sleep(5)
+    print(order_books['SR300CB6'])
+    print(get_last_bid_and_ask("SR300CB6"))
+
 #
 #     #
 #     # print(get_candles(access_token, "SR300CB6", "2026-02-10", "2026-02-11", "OPTSPOT", "H1"))
