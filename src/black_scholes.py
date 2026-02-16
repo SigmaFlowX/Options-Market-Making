@@ -31,10 +31,16 @@ def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, ex
     american_option.setPricingEngine(engine)
 
     price = american_option.NPV()
-    #delta = american_option.delta()
-    #gamma = american_option.gamma()
+    delta = american_option.delta()
+    gamma = american_option.gamma()
 
-    return price
+    dict = {
+        'price':price,
+        'delta':delta,
+        'gamma':gamma
+    }
+
+    return dict
 
 if __name__ == "__main__":
     price = 300
