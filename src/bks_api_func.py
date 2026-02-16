@@ -324,6 +324,24 @@ def get_current_inventory(token):
         inventory[ticker] = size
 
     return inventory
+
+def price_option_using_bs(token, spot_ticker, option_ticker):
+    try:
+        from black_scholes import solve_black_scholes
+    except:
+        print("Couldnt find BS script, NONE is returned")
+        return None
+
+    spot_price = get_current_price(token, spot_ticker, class_code="TQBR")
+    expiry = get_option_maturity_date(token, spot_ticker, option_ticker)
+    strike_price = float(option_ticker[2:5])
+    eval_date = datetime.now()
+
+    solution = solve_black_scholes(spot_price, strike_price, 0.15, 0.2, expiry, eval_date)
+
+    return solution
+
+
 # Состояние заявки:
 # 0 — Новая
 # 1 — Частично исполнена
@@ -338,8 +356,7 @@ def get_current_inventory(token):
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
 
-    print(get_raw_positions(access_token))
-    print(get_current_inventory(access_token))
+    print(price_option_using_BS(access_token, "SBER", "SR300CB6"))
 
 #
 #     #
