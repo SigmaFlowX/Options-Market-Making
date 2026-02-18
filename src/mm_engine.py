@@ -23,13 +23,23 @@ class MarketData:
             "Accept": "application/json"
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, data=payload, timeout=10) as resp:
-                data = await resp.json()
-                self.refresh_token = data['access_token']
-                print("O")
+        for attempt in range(4):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, headers=headers, data=payload, timeout=10) as resp:
+                        if resp.status!= 200:
+                            text = await resp.text()
+                            print(f"Invalid response while authorizing \n {resp.status} \n {text}")
+                            await asyncio.sleep(3 + 2*attempt)
+                            continue
+                        data = await resp.json()
+                        self.access_token = data['access_token']
+                        return
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt+1} while authorizing: \n {e}")
+                await asyncio.sleep(3 + 2*attempt)
 
-
+        raise Exception("Failed to authorize with 4 attempts")
 
 
 
@@ -39,3 +49,4 @@ bks_token = os.getenv("BKS_TOKEN")
 market_data = MarketData(bks_token)
 
 asyncio.run(market_data.authorize())
+
