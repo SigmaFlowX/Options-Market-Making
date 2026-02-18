@@ -1,6 +1,8 @@
 import asyncio
 import os
 import aiohttp
+import websocket
+import json
 
 class MarketData:
     def __init__(self, token):
@@ -41,12 +43,40 @@ class MarketData:
 
         raise Exception("Failed to authorize with 4 attempts")
 
+    async def start_order_book_ws(self, ticker, depth, class_code):
+        url = "wss://ws.broker.ru/trade-api-market-data-connector/api/v1/market-data/ws"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
 
+        async with aiohttp.ClientSession() as session:
+            async with session.ws_connect(url, headers=headers) as ws:
+                print("connected")
+                subscribe_message = {
+                    "subscribeType": 0,
+                    "dataType": 0,
+                    "depth": depth,
+                    "instruments": [
+                        {
+                            "classCode": class_code,
+                            "ticker": ticker
+                        }
+                    ]
+                }
+                await ws.send_json(subscribe_message)
 
+                async for msg in ws:
+                    if msg.type == aiohttp.WSMsgType.TEXT:
+                        data = json.loads(msg.data)
+                        print("Received:", data)
+                    elif msg.type == aiohttp.WSMsgType.ERROR:
+                        break
 
 #env variable
 bks_token = os.getenv("BKS_TOKEN")
 market_data = MarketData(bks_token)
 
 asyncio.run(market_data.authorize())
+asyncio.run(market_data.start_order_book_ws("SBER", 1, "TQBR"))
+
+while True:
+    pass
 
