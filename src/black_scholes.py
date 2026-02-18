@@ -1,6 +1,6 @@
 import QuantLib as ql
 
-def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, expiry_date, eval_date):
+def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, expiry_date, eval_date, option_type):
 
     expiry_date = ql.Date(expiry_date.day, expiry_date.month, expiry_date.year)
     eval_date = ql.Date(eval_date.day, eval_date.month, eval_date.year)
@@ -22,7 +22,13 @@ def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, ex
         flat_vol_ts
     )
 
-    payoff = ql.PlainVanillaPayoff(ql.Option.Call, strike_price)
+    if option_type == "call":
+        payoff = ql.PlainVanillaPayoff(ql.Option.Call, strike_price)
+    elif option_type == "put":
+        payoff = ql.PlainVanillaPayoff(ql.Option.Put, strike_price)
+    else:
+        print("Incorrect option type, None is returned")
+        return None
     exercise = ql.AmericanExercise(eval_date, expiry_date)
 
     american_option = ql.VanillaOption(payoff, exercise)
