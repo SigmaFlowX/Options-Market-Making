@@ -1,10 +1,9 @@
 import asyncio
 import os
 import aiohttp
-import websocket
 import json
 
-class MarketData:
+class BrokerClient:
     def __init__(self, token):
         self.refresh_token = token
         self.access_token = None
@@ -36,6 +35,7 @@ class MarketData:
                             continue
                         data = await resp.json()
                         self.access_token = data['access_token']
+                        print("Authorized")
                         return
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt+1} while authorizing: \n {e}")
@@ -47,36 +47,57 @@ class MarketData:
         url = "wss://ws.broker.ru/trade-api-market-data-connector/api/v1/market-data/ws"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.ws_connect(url, headers=headers) as ws:
-                print("connected")
-                subscribe_message = {
-                    "subscribeType": 0,
-                    "dataType": 0,
-                    "depth": depth,
-                    "instruments": [
-                        {
-                            "classCode": class_code,
-                            "ticker": ticker
+        attempt = 0
+        while True:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.ws_connect(url, headers=headers) as ws:
+                        subscribe_message = {
+                            "subscribeType": 0,
+                            "dataType": 0,
+                            "depth": depth,
+                            "instruments": [
+                                {
+                                    "classCode": class_code,
+                                    "ticker": ticker
+                                }
+                            ]
                         }
-                    ]
-                }
-                await ws.send_json(subscribe_message)
+                        await ws.send_json(subscribe_message)
+                        print(f"connected ws for {ticker}")
+                        async for msg in ws:
+                            if msg.type == aiohttp.WSMsgType.TEXT:
+                                try:
+                                    data = json.loads(msg.data)
+                                    print(data)
+                                except Exception as e:
+                                    print("Invalid json")
+                                    continue
+                                await self.q_orderbooks.put(data)
+                            elif msg.type == aiohttp.WSMsgType.ERROR:
+                                print(f"Websocket message error: \n {ws.exception()}")
+                                break
+                            elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSING):
+                                print("Websocket closed by server")
+                                break
 
-                async for msg in ws:
-                    if msg.type == aiohttp.WSMsgType.TEXT:
-                        data = json.loads(msg.data)
-                        print("Received:", data)
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
-                        break
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while opening order book websocket: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+
+
 
 #env variable
-bks_token = os.getenv("BKS_TOKEN")
-market_data = MarketData(bks_token)
 
-asyncio.run(market_data.authorize())
-asyncio.run(market_data.start_order_book_ws("SBER", 1, "TQBR"))
+async def main():
+    token = os.getenv("BKS_TOKEN")
+    client = BrokerClient(token)
 
-while True:
-    pass
+    await client.authorize()
+    ws_task = asyncio.create_task(client.start_order_book_ws("SR300CB6", 1, "OPTSPOT"))
+    await ws_task
 
+if __name__ == "__main__":
+    asyncio.run(main())
