@@ -8,6 +8,7 @@ class BrokerClient:
         self.refresh_token = token
         self.access_token = None
 
+        self.q_inventory = asyncio.Queue()
         self.q_orderbooks = asyncio.Queue()
 
     async def authorize(self):
@@ -32,6 +33,7 @@ class BrokerClient:
                             text = await resp.text()
                             print(f"Invalid response while authorizing \n {resp.status} \n {text}")
                             await asyncio.sleep(3 + 2*attempt)
+                            attempt += 1
                             continue
                         data = await resp.json()
                         self.access_token = data['access_token']
@@ -69,7 +71,6 @@ class BrokerClient:
                             if msg.type == aiohttp.WSMsgType.TEXT:
                                 try:
                                     data = json.loads(msg.data)
-                                    print(data)
                                 except Exception as e:
                                     print("Invalid json")
                                     continue
@@ -86,17 +87,50 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
+    async def get_inventory(self):
+        url = "https://be.broker.ru/trade-api-bff-portfolio/api/v1/portfolio"
 
+        payload = {}
+        headers = {
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.access_token}'
+        }
+        attempt = 0
+        while True:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers, data=payload) as resp:
+                        if resp.status!= 200:
+                            text = await resp.text()
+                            print(f"Invalid response while updating inventory \n {resp.status} \n {text}")
+                            await asyncio.sleep(3 + 2*attempt)
+                            attempt += 1
+                            continue
+                        data = await resp.json()
+                        inventory = {}
+                        for position in data:
+                            ticker = position['ticker']
+                            if ticker in inventory:
+                                continue
+                            size = position['quantity']
+                            inventory[ticker] = size
+                        await self.q_inventory.put(inventory)
+                        print(inventory)
+                        return inventory
 
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while opening updating inventory: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
 
-#env variable
 
 async def main():
+    # env variable
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
 
     await client.authorize()
-    ws_task = asyncio.create_task(client.start_order_book_ws("SR300CB6", 1, "OPTSPOT"))
+    ws_task = asyncio.create_task(client.get_inventory())
     await ws_task
 
 if __name__ == "__main__":
