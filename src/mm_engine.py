@@ -16,7 +16,6 @@ class BrokerClient:
         self.session = aiohttp.ClientSession()
         await self.authorize()
 
-
     async def authorize(self):
         url = "https://be.broker.ru/trade-api-keycloak/realms/tradeapi/protocol/openid-connect/token"\
 
@@ -78,7 +77,6 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
-                            print(data)
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
@@ -119,7 +117,6 @@ class BrokerClient:
                         size = position['quantity']
                         inventory[ticker] = size
                     await self.q_inventory.put(inventory)
-                    print(inventory)
                     return inventory
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -127,19 +124,78 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
+class MVPStrategy:
+    def __init__(self, client, ticker, spread, order_size):
+        self.client = client
+        self.ticker = ticker
+        self.spread = spread
+        self.order_size = order_size
+
+        self.position = None
+        self.best_bid = None
+        self.best_ask = None
+
+    async def run(self):
+        while True:
+            done, pending = await asyncio.wait(
+                [
+                    asyncio.create_task(self.client.q_orderbooks.get()),
+                    asyncio.create_task(self.client.q_inventory.get())
+                ],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+
+            for task in done:
+                data = task.result()
+
+                if "depth" in data:
+                    self.best_ask = data['asks'][0]['price']
+                    self.best_bid = data['bids'][0]['price']
+                else:
+                    self.position = data.get(self.ticker, 0)
+
+            orders = self.generate_orders()
+            if orders:
+                print("NEW ORDERS:", orders)
+
+    def generate_orders(self):
+        if self.best_bid is None or self.best_ask is None:
+            return None
+
+        mid = (self.best_bid + self.best_ask) / 2
+        half_spread = self.spread / 2
+
+        bid = mid - half_spread
+        ask = mid + half_spread
+
+        return {
+            "ticker": self.ticker,
+            "bid_price": round(bid, 4),
+            "bid_size": self.order_size,
+            "ask_price": round(ask, 4),
+            "ask_size": self.order_size,
+        }
+
 
 async def main():
-    # env variable
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
 
     await client.start()
-    tasks = [
-        client.get_inventory(),
-        client.start_order_book_ws(ticker="SR300CB6D", depth=1, class_code="OPTSPOT" )
 
-    ]
-    await asyncio.gather(*tasks)
+    ws_task = asyncio.create_task(client.start_order_book_ws("SR300CB6D", 1, "OPTSPOT")
+    )
+
+    async def inventory_refresher():
+        while True:
+            await client.get_inventory()
+            await asyncio.sleep(30)
+    refresher_task = asyncio.create_task(inventory_refresher())
+
+    strategy = MVPStrategy(client=client, ticker="SR300CB6D", spread=0.5, order_size=5)
+    strategy_task = asyncio.create_task(strategy.run())
+
+    await asyncio.gather(ws_task, refresher_task, strategy_task)
 
 if __name__ == "__main__":
     asyncio.run(main())
