@@ -134,6 +134,16 @@ class BrokerClient:
                 print(f"Failed to update inventory \n {e}")
                 await asyncio.sleep(5)
 
+    async def start_orders_ws(self):  # Apparently not working currently
+        url = "wss://ws.broker.ru/trade-api-bff-operations/api/v1/orders/execution/ws"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+
+        async with self.session.ws_connect(url, headers=headers) as ws:
+            print("Connected?")
+            await ws.send_json({"type": "ping"})
+            async for ms in ws:
+                data = json.loads(ms.data)
+                print(data)
 class MVPStrategy:
     def __init__(self, client, ticker, spread, order_size, inventory_limit, inventory_k):
         self.client = client
@@ -183,6 +193,9 @@ class MVPStrategy:
         bid = center - half_spread
         ask = center + half_spread
 
+        bid = min(bid, self.best_bid)
+        ask = max(ask, self.best_ask)
+
         bid_size = self.order_size
         ask_size = self.order_size
 
@@ -201,21 +214,15 @@ class MVPStrategy:
         }
 
 
+
 async def main():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
-
     await client.start()
 
-    ws_task = asyncio.create_task(client.start_order_book_ws("SR300CB6D", 1, "OPTSPOT")
-    )
+    ws_task = asyncio.create_task(client.start_orders_ws())
 
-    refresher_task = asyncio.create_task(client.start_inventory_refresher())
-
-    strategy = MVPStrategy(client=client, ticker="SR300CB6D", spread=0.5, order_size=5, inventory_k=0.1, inventory_limit=5)
-    strategy_task = asyncio.create_task(strategy.run())
-
-    await asyncio.gather(ws_task, refresher_task, strategy_task)
+    await asyncio.gather(ws_task)
 
 if __name__ == "__main__":
     asyncio.run(main())
