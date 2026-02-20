@@ -77,6 +77,7 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
+                            print("orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
@@ -124,12 +125,23 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
+    async def start_inventory_refresher(self):
+        while True:
+            try:
+                await self.get_inventory()
+                await asyncio.sleep(5)
+            except Exception as e:
+                print(f"Failed to update inventory \n {e}")
+                await asyncio.sleep(5)
+
 class MVPStrategy:
-    def __init__(self, client, ticker, spread, order_size):
+    def __init__(self, client, ticker, spread, order_size, inventory_limit, inventory_k):
         self.client = client
         self.ticker = ticker
         self.spread = spread
         self.order_size = order_size
+        self.inventory_limit = inventory_limit
+        self.inventory_k = inventory_k
 
         self.position = None
         self.best_bid = None
@@ -186,11 +198,7 @@ async def main():
     ws_task = asyncio.create_task(client.start_order_book_ws("SR300CB6D", 1, "OPTSPOT")
     )
 
-    async def inventory_refresher():
-        while True:
-            await client.get_inventory()
-            await asyncio.sleep(30)
-    refresher_task = asyncio.create_task(inventory_refresher())
+    refresher_task = asyncio.create_task(client.start_inventory_refresher())
 
     strategy = MVPStrategy(client=client, ticker="SR300CB6D", spread=0.5, order_size=5)
     strategy_task = asyncio.create_task(strategy.run())
