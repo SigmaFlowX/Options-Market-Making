@@ -2,6 +2,7 @@ import asyncio
 import os
 import aiohttp
 import json
+from datetime import datetime, timedelta
 
 class BrokerClient:
     def __init__(self, token):
@@ -15,6 +16,9 @@ class BrokerClient:
     async def start(self):
         self.session = aiohttp.ClientSession()
         await self.authorize()
+
+    async def close(self):
+        await self.session.close()
 
     async def authorize(self):
         url = "https://be.broker.ru/trade-api-keycloak/realms/tradeapi/protocol/openid-connect/token"\
@@ -144,6 +148,42 @@ class BrokerClient:
             async for ms in ws:
                 data = json.loads(ms.data)
                 print(data)
+
+    async def get_all_active_orders(self):
+        url = "https://be.broker.ru/trade-api-bff-order-details/api/v1/orders/search"
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.access_token}'
+        }
+
+        payload = {
+            "StartDateTime":(datetime.now() - timedelta(days=1)).isoformat(),
+            "EndDateTime": (datetime.now() + timedelta(days=1)).isoformat(),
+            "orderStatus": [3] #active
+        }
+
+        attempt = 0
+        while True:
+            try:
+                async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while updating inventory \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    data = await resp.json()
+                    print(data['records'])
+                    break
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while getting active orders: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+
+
 class MVPStrategy:
     def __init__(self, client, ticker, spread, order_size, inventory_limit, inventory_k):
         self.client = client
@@ -220,9 +260,10 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    ws_task = asyncio.create_task(client.start_orders_ws())
+    task1 = client.get_all_active_orders()
+    await asyncio.gather(task1)
 
-    await asyncio.gather(ws_task)
+    await client.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
