@@ -3,6 +3,7 @@ import os
 import aiohttp
 import json
 from datetime import datetime, timedelta
+import uuid
 
 class BrokerClient:
     def __init__(self, token):
@@ -12,6 +13,7 @@ class BrokerClient:
 
         self.q_inventory = asyncio.Queue()
         self.q_orderbooks = asyncio.Queue()
+        self.q_placed_orders = asyncio.Queue()
 
     async def start(self):
         self.session = aiohttp.ClientSession()
@@ -182,6 +184,81 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
+    async def place_limit_order(self, ticker, class_code, side, price, quantity):
+        url = "https://be.broker.ru/trade-api-bff-operations/api/v1/orders"
+
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}"
+        }
+
+        attempt = 0
+        while True:
+            client_order_id = str(uuid.uuid4())
+            payload = {
+                "clientOrderId": client_order_id,
+                "side": str(side),
+                "orderType": "2",
+                "orderQuantity": quantity,
+                "ticker": ticker,
+                "classCode": class_code,
+                "price": price
+            }
+            try:
+                async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while while placing order \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    data = await resp.json()
+                    client_order_id = data['clientOrderId']
+                    order = {
+                        "original_id": client_order_id,
+                        "ticker": ticker,
+                        "price": price,
+                        "quantity": quantity
+                    }
+                    await self.q_placed_orders.put(order)
+                    print(f"Placed order for {ticker} at price {price} with quantity {quantity}")
+
+                    break
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while placing order: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+    async def cancel_order(self, id):
+        url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}/cancel"
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.access_token}'
+        }
+
+        attempt = 0
+        while True:
+            new_id = str(uuid.uuid4())
+            payload = {
+                "clientOrderId": new_id
+            }
+            try:
+                async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while canceling order \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    print(f"Canceled order {id}")
+                    break
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
 
 
 class MVPStrategy:
@@ -260,9 +337,11 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    task1 = client.get_all_active_orders()
-    await asyncio.gather(task1)
 
+    #task1 = client.place_limit_order("SR300CB6D", "OPTSPOT", 1, 1, 1)
+    task1 = client.cancel_order("b1bf80de-a284-415a-a518-33bfb15e6290")
+    await asyncio.gather(task1)
+    print(client.q_placed_orders)
     await client.close()
 
 if __name__ == "__main__":
