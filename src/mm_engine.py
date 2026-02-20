@@ -143,7 +143,7 @@ class MVPStrategy:
         self.inventory_limit = inventory_limit
         self.inventory_k = inventory_k
 
-        self.position = None
+        self.inventory = None
         self.best_bid = None
         self.best_ask = None
 
@@ -164,7 +164,7 @@ class MVPStrategy:
                     self.best_ask = data['asks'][0]['price']
                     self.best_bid = data['bids'][0]['price']
                 else:
-                    self.position = data.get(self.ticker, 0)
+                    self.inventory = data.get(self.ticker, 0)
 
             orders = self.generate_orders()
             if orders:
@@ -177,15 +177,27 @@ class MVPStrategy:
         mid = (self.best_bid + self.best_ask) / 2
         half_spread = self.spread / 2
 
-        bid = mid - half_spread
-        ask = mid + half_spread
+        inventory_shift = self.inventory_k * self.inventory
+        center = mid - inventory_shift
+
+        bid = center - half_spread
+        ask = center + half_spread
+
+        bid_size = self.order_size
+        ask_size = self.order_size
+
+        if self.inventory > 0:
+            bid_size *= max(0.1, 1 - abs(self.inventory) / self.inventory_limit)
+
+        if self.inventory < 0:
+            ask_size *= max(0.1, 1 - abs(self.inventory) / self.inventory_limit)
 
         return {
             "ticker": self.ticker,
             "bid_price": round(bid, 4),
-            "bid_size": self.order_size,
+            "bid_size": round(bid_size, 2),
             "ask_price": round(ask, 4),
-            "ask_size": self.order_size,
+            "ask_size": round(ask_size, 2),
         }
 
 
@@ -200,7 +212,7 @@ async def main():
 
     refresher_task = asyncio.create_task(client.start_inventory_refresher())
 
-    strategy = MVPStrategy(client=client, ticker="SR300CB6D", spread=0.5, order_size=5)
+    strategy = MVPStrategy(client=client, ticker="SR300CB6D", spread=0.5, order_size=5, inventory_k=0.1, inventory_limit=5)
     strategy_task = asyncio.create_task(strategy.run())
 
     await asyncio.gather(ws_task, refresher_task, strategy_task)
