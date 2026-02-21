@@ -4,6 +4,7 @@ import aiohttp
 import json
 from datetime import datetime, timedelta
 import uuid
+import pandas as pd
 
 class BrokerClient:
     def __init__(self, token):
@@ -258,6 +259,44 @@ class BrokerClient:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
+
+    async def get_order_status(self, id):
+        url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}"
+        payload = {
+            "originalClientOrderId": id
+        }
+        headers = {
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.access_token}'
+        }
+
+        attempt = 0
+        while True:
+            try:
+                async with self.session.get(url, headers=headers, data=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while while placing order \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    data = resp.json()
+                    return data
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while getting order status: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+    # async def update_orders_table_status(self):
+    #     try:
+    #         orders_df = pd.read_csv("orders.csv")
+    #     except:
+    #         orders_df = pd.DataFrame(columns=[
+    #             "local_id", "ticker", "side", "price", "quantity", "status"
+    #         ])
+    #         orders_df.to_csv("orders_csv", index=False)
+
+
 
 
 class MVPStrategy:
