@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 import uuid
 import pandas as pd
 
+from src.bks_api_func import get_order_status
+
+
 class BrokerClient:
     def __init__(self, token):
         self.refresh_token = token
@@ -14,7 +17,6 @@ class BrokerClient:
 
         self.q_inventory = asyncio.Queue()
         self.q_orderbooks = asyncio.Queue()
-        self.q_placed_orders = asyncio.Queue()
 
     async def start(self):
         self.session = aiohttp.ClientSession()
@@ -208,21 +210,37 @@ class BrokerClient:
             }
             try:
                 async with self.session.post(url, headers=headers, json=payload) as resp:
+
                     if resp.status != 200:
                         text = await resp.text()
                         print(f"Invalid response while while placing order \n {resp.status} \n {text}")
                         await asyncio.sleep(3 + 2 * attempt)
                         attempt += 1
                         continue
+
                     data = await resp.json()
                     client_order_id = data['clientOrderId']
-                    order = {
-                        "original_id": client_order_id,
+
+                    try:
+                        orders_df = pd.read_csv("orders.csv")
+                    except FileNotFoundError:
+                        orders_df = pd.DataFrame(columns=[
+                            "local_id", "ticker", "class_code", "side", "price", "quantity", "status"
+                        ])
+
+
+                    new_order = {
+                        "local_id": client_order_id,
                         "ticker": ticker,
+                        "class_code": class_code,
+                        "side": side,
                         "price": price,
-                        "quantity": quantity
+                        "quantity": quantity,
+                        "status": '0'
                     }
-                    await self.q_placed_orders.put(order)
+
+                    orders_df = pd.concat([orders_df, pd.DataFrame([new_order])], ignore_index=True)
+                    orders_df.to_csv("orders.csv", index=False)
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity}")
 
                     break
@@ -280,21 +298,38 @@ class BrokerClient:
                         await asyncio.sleep(3 + 2 * attempt)
                         attempt += 1
                         continue
-                    data = resp.json()
+                    data = await resp.json()
                     return data
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while getting order status: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
-    # async def update_orders_table_status(self):
-    #     try:
-    #         orders_df = pd.read_csv("orders.csv")
-    #     except:
-    #         orders_df = pd.DataFrame(columns=[
-    #             "local_id", "ticker", "side", "price", "quantity", "status"
-    #         ])
-    #         orders_df.to_csv("orders_csv", index=False)
+    async def update_orders_table_status(self):
+        try:
+            orders_df = pd.read_csv("orders.csv")
+        except FileNotFoundError:
+            orders_df = pd.DataFrame(columns=[
+                "local_id", "ticker", "class_code", "side", "price", "quantity", "status"
+            ])
+            orders_df.to_csv("orders.csv", index=False)
+
+        indices_to_drop = []
+        for index in orders_df.index:
+            order_id = orders_df.loc[index, "local_id"]
+            order_status = await self.get_order_status(id=order_id)
+
+            if order_status['data']['orderStatus'] in ['2', '4', '6', '8']:
+                indices_to_drop.append(index)
+            elif order_status['data']['orderStatus'] == '1':
+                orders_df.loc[index, 'quantity'] = order_status['data']['remainedQuantity']
+            else:
+                orders_df.loc[index, 'status'] = int(order_status['data']['orderStatus'])
+
+        orders_df.drop(indices_to_drop, inplace=True)
+        orders_df.to_csv("orders.csv", index=False)
+
+
 
 
 
@@ -397,14 +432,10 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    order_manager = OrderManager(client)
-    strategy = MVPStrategy(client, order_manager, "SBER", 0.5, 1, 5, 0.1)
-    task0 = asyncio.create_task(client.start_inventory_refresher())
-    task1= asyncio.create_task(client.start_order_book_ws("SBER", 1, "TQBR"))
-    task2 = asyncio.create_task(strategy.run())
-    task3 = asyncio.create_task(order_manager.run())
+    task1 = asyncio.create_task(client.place_limit_order("VTBR", "TQBR", 1, 86.2,1))
+    task2 = client.update_orders_table_status()
 
-    await asyncio.gather(task0, task1, task2, task3)
+    await asyncio.gather(task1, task2)
     await client.close()
 
 if __name__ == "__main__":
