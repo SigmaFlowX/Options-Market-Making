@@ -83,7 +83,6 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
-                            print("orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
@@ -135,6 +134,7 @@ class BrokerClient:
         while True:
             try:
                 await self.get_inventory()
+                print("Inventory updated")
                 await asyncio.sleep(5)
             except Exception as e:
                 print(f"Failed to update inventory \n {e}")
@@ -146,7 +146,6 @@ class BrokerClient:
 
         async with self.session.ws_connect(url, headers=headers) as ws:
             print("Connected?")
-            await ws.send_json({"type": "ping"})
             async for ms in ws:
                 data = json.loads(ms.data)
                 print(data)
@@ -295,8 +294,10 @@ class MVPStrategy:
                     self.inventory = data.get(self.ticker, 0)
 
             orders = self.generate_orders()
+
             if orders:
-                print("new desired orders generated:", orders)
+                await self.order_manager.submit_orders(orders)
+                print("new desired orders sent by strategy class:", orders)
 
     def generate_orders(self):
         if self.best_bid is None or self.best_ask is None:
@@ -332,21 +333,31 @@ class MVPStrategy:
         }
 
 class OrderManager:
-
     def __init__(self, client):
         self.client = client
         self.q_desired_orders = asyncio.Queue()
+
+    async def submit_orders(self, desired_orders):
+        await self.q_desired_orders.put(desired_orders)
+
+    async def run(self):
+        while True:
+            desired_orders = await self.q_desired_orders.get()
+            print("Current desired orders were recieved by order manager: \n", desired_orders)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
     await client.start()
 
+    order_manager = OrderManager(client)
+    strategy = MVPStrategy(client, order_manager, "SBER", 0.5, 1, 5, 0.1)
+    task0 = asyncio.create_task(client.start_inventory_refresher())
+    task1= asyncio.create_task(client.start_order_book_ws("SBER", 1, "TQBR"))
+    task2 = asyncio.create_task(strategy.run())
+    task3 = asyncio.create_task(order_manager.run())
 
-    #task1 = client.place_limit_order("SR300CB6D", "OPTSPOT", 1, 1, 1)
-    task1 = client.cancel_order("b1bf80de-a284-415a-a518-33bfb15e6290")
-    await asyncio.gather(task1)
-    print(client.q_placed_orders)
+    await asyncio.gather(task0, task1, task2, task3)
     await client.close()
 
 if __name__ == "__main__":
