@@ -262,8 +262,9 @@ class BrokerClient:
 
 
 class MVPStrategy:
-    def __init__(self, client, ticker, spread, order_size, inventory_limit, inventory_k):
+    def __init__(self, client, order_manager, ticker, spread, order_size, inventory_limit, inventory_k):
         self.client = client
+        self.order_manager = order_manager
         self.ticker = ticker
         self.spread = spread
         self.order_size = order_size
@@ -295,7 +296,7 @@ class MVPStrategy:
 
             orders = self.generate_orders()
             if orders:
-                print("NEW ORDERS:", orders)
+                print("new desired orders generated:", orders)
 
     def generate_orders(self):
         if self.best_bid is None or self.best_ask is None:
@@ -330,7 +331,11 @@ class MVPStrategy:
             "ask_size": round(ask_size, 2),
         }
 
+class OrderManager:
 
+    def __init__(self, client):
+        self.client = client
+        self.q_desired_orders = asyncio.Queue()
 
 async def main():
     token = os.getenv("BKS_TOKEN")
