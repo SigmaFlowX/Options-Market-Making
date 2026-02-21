@@ -297,7 +297,6 @@ class MVPStrategy:
 
             if orders:
                 await self.order_manager.submit_orders(orders)
-                print("new desired orders sent by strategy class:", orders)
 
     def generate_orders(self):
         if self.best_bid is None or self.best_ask is None:
@@ -324,6 +323,14 @@ class MVPStrategy:
         if self.inventory < 0:
             ask_size *= max(0.1, 1 - abs(self.inventory) / self.inventory_limit)
 
+        bid_size = max(1, bid_size)
+        ask_size = max(1, ask_size)
+
+        if self.inventory >= self.inventory_limit:
+            bid_size = 0
+        elif self.inventory <= -self.inventory_limit:
+            ask_size = 0
+
         return {
             "ticker": self.ticker,
             "bid_price": round(bid, 4),
@@ -344,6 +351,7 @@ class OrderManager:
         while True:
             desired_orders = await self.q_desired_orders.get()
             print("Current desired orders were recieved by order manager: \n", desired_orders)
+            await asyncio.sleep(5)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
