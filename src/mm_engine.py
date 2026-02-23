@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import uuid
 import pandas as pd
 
-from src.bks_api_func import get_order_status
 
 
 class BrokerClient:
@@ -329,16 +328,12 @@ class BrokerClient:
         orders_df.drop(indices_to_drop, inplace=True)
         orders_df.to_csv("orders.csv", index=False)
 
-
-
-
-
-
 class MVPStrategy:
-    def __init__(self, client, order_manager, ticker, spread, order_size, inventory_limit, inventory_k):
+    def __init__(self, client, order_manager, ticker, class_code,  spread, order_size, inventory_limit, inventory_k):
         self.client = client
         self.order_manager = order_manager
         self.ticker = ticker
+        self.class_code = class_code
         self.spread = spread
         self.order_size = order_size
         self.inventory_limit = inventory_limit
@@ -405,13 +400,23 @@ class MVPStrategy:
         elif self.inventory <= -self.inventory_limit:
             ask_size = 0
 
-        return {
+        ask_order = {
             "ticker": self.ticker,
-            "bid_price": round(bid, 4),
-            "bid_size": round(bid_size, 2),
-            "ask_price": round(ask, 4),
-            "ask_size": round(ask_size, 2),
+            "class_code": self.class_code,
+            "side": '0',
+            "price": ask,
+            "quantity": ask_size
         }
+
+        bid_order = {
+            "ticker": self.ticker,
+            "class_code": self.class_code,
+            "side": '1',
+            "price": bid,
+            "quantity": bid_size
+        }
+
+        return [bid_order, ask_order]
 
 class OrderManager:
     def __init__(self, client):
@@ -424,16 +429,15 @@ class OrderManager:
     async def run(self):
         while True:
             desired_orders = await self.q_desired_orders.get()
-            print("Current desired orders were recieved by order manager: \n", desired_orders)
             await asyncio.sleep(5)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
     await client.start()
-
-    task1 = asyncio.create_task(client.place_limit_order("VTBR", "TQBR", 1, 86.2,1))
-    task2 = client.update_orders_table_status()
+    task1 = asyncio.create_task(client.start_orders_ws())
+    task2 = asyncio.create_task(client.place_limit_order("VTBR", "TQBR", 1, 89,1))
+    # task2 = client.update_orders_table_status()
 
     await asyncio.gather(task1, task2)
     await client.close()
