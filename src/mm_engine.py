@@ -85,6 +85,7 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
+                            print("Orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
@@ -429,17 +430,28 @@ class OrderManager:
     async def run(self):
         while True:
             desired_orders = await self.q_desired_orders.get()
+            current_orders_pd = pd.read_csv("orders.csv")
+            print(f"reveived desired orders: \n {desired_orders}")
+            for desired_order in desired_orders:
+                pass # check whether there orders that could be edited. If not, just send fresh orders.
+
+
             await asyncio.sleep(5)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
     await client.start()
-    task1 = asyncio.create_task(client.start_orders_ws())
-    task2 = asyncio.create_task(client.place_limit_order("VTBR", "TQBR", 1, 89,1))
-    # task2 = client.update_orders_table_status()
 
-    await asyncio.gather(task1, task2)
+    order_manager = OrderManager(client=client)
+    strategy = MVPStrategy(client, order_manager, "SBER", "TQBR", 0.5, 1, 5, 0.1)
+
+    task1 = asyncio.create_task(client.start_order_book_ws("SBER", 1, "TQBR"))
+    task2 = asyncio.create_task(client.start_inventory_refresher())
+    task3 = asyncio.create_task(strategy.run())
+    task4 = asyncio.create_task(order_manager.run())
+
+    await asyncio.gather(task1, task2, task3)
     await client.close()
 
 if __name__ == "__main__":
