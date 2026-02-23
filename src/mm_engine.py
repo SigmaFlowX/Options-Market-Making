@@ -433,8 +433,20 @@ class OrderManager:
             current_orders_pd = pd.read_csv("orders.csv")
             print(f"reveived desired orders: \n {desired_orders}")
             for desired_order in desired_orders:
-                pass # check whether there orders that could be edited. If not, just send fresh orders.
-
+                order_to_edit = current_orders_pd[
+                    (current_orders_pd['ticker'] == desired_order['ticker']) &
+                    (current_orders_pd['side'] == desired_order['side'])
+                    ]
+                if order_to_edit.empty:
+                    await self.client.place_limit_order(
+                        ticker=desired_order['ticker'],
+                        class_code=desired_order['class_code'],
+                        side=desired_order['side'],
+                        price=desired_order['price'],
+                        quantity=desired_order['quantity']
+                    )
+                else:
+                    pass #edit order
 
             await asyncio.sleep(5)
 
