@@ -13,6 +13,7 @@ class BrokerClient:
         self.refresh_token = token
         self.session = None
         self.access_token = None
+        self.active_orders = {}
 
         self.q_inventory = asyncio.Queue()
         self.q_orderbooks = asyncio.Queue()
@@ -221,16 +222,7 @@ class BrokerClient:
                     data = await resp.json()
                     client_order_id = data['clientOrderId']
 
-                    try:
-                        orders_df = pd.read_csv("orders.csv")
-                    except FileNotFoundError:
-                        orders_df = pd.DataFrame(columns=[
-                            "local_id", "ticker", "class_code", "side", "price", "quantity", "status"
-                        ])
-
-
-                    new_order = {
-                        "local_id": client_order_id,
+                    self.active_orders[client_order_id] = {
                         "ticker": ticker,
                         "class_code": class_code,
                         "side": side,
@@ -238,9 +230,6 @@ class BrokerClient:
                         "quantity": quantity,
                         "status": '0'
                     }
-
-                    orders_df = pd.concat([orders_df, pd.DataFrame([new_order])], ignore_index=True)
-                    orders_df.to_csv("orders.csv", index=False)
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity}")
 
                     break
@@ -272,6 +261,7 @@ class BrokerClient:
                         attempt += 1
                         continue
                     print(f"Canceled order {id}")
+                    self.active_orders.pop(id, None)
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
@@ -305,29 +295,19 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
-    async def update_orders_table_status(self):
-        try:
-            orders_df = pd.read_csv("orders.csv")
-        except FileNotFoundError:
-            orders_df = pd.DataFrame(columns=[
-                "local_id", "ticker", "class_code", "side", "price", "quantity", "status"
-            ])
-            orders_df.to_csv("orders.csv", index=False)
+    async def force_update_orders_dict_status(self):
 
-        indices_to_drop = []
-        for index in orders_df.index:
-            order_id = orders_df.loc[index, "local_id"]
+        for order_id in list(self.active_orders.keys()):
             order_status = await self.get_order_status(id=order_id)
 
             if order_status['data']['orderStatus'] in ['2', '4', '6', '8']:
-                indices_to_drop.append(index)
+                self.active_orders.pop(order_id)
             elif order_status['data']['orderStatus'] == '1':
-                orders_df.loc[index, 'quantity'] = order_status['data']['remainedQuantity']
+                self.active_orders[order_id]['quantity'] = order_status['data']['remainedQuantity']
             else:
-                orders_df.loc[index, 'status'] = int(order_status['data']['orderStatus'])
+                self.active_orders[order_id]['status'] = int(order_status['data']['orderStatus'])
 
-        orders_df.drop(indices_to_drop, inplace=True)
-        orders_df.to_csv("orders.csv", index=False)
+
 
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code,  spread, order_size, inventory_limit, inventory_k):
@@ -430,14 +410,19 @@ class OrderManager:
     async def run(self):
         while True:
             desired_orders = await self.q_desired_orders.get()
-            current_orders_pd = pd.read_csv("orders.csv")
-            print(f"reveived desired orders: \n {desired_orders}")
+            current_orders = self.client.actove_orders
             for desired_order in desired_orders:
-                order_to_edit = current_orders_pd[
-                    (current_orders_pd['ticker'] == desired_order['ticker']) &
-                    (current_orders_pd['side'] == desired_order['side'])
-                    ]
-                if order_to_edit.empty:
+
+                order_to_edit = None
+                order_id_to_edit = None
+
+                for client_id, order in current_orders.items():
+                    if (order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"]):
+                        order_to_edit = order
+                        order_id_to_edit = client_id
+                        break
+
+                if order_to_edit is None:
                     await self.client.place_limit_order(
                         ticker=desired_order['ticker'],
                         class_code=desired_order['class_code'],
@@ -455,15 +440,10 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SBER", "TQBR", 0.5, 1, 5, 0.1)
+    task1 = asyncio.create_task(client.start_orders_ws())
+    task2 = asyncio.create_task(client.place_limit_order("SR310CB6D", "OPTSPOT", 1, 7, 1 ))
 
-    task1 = asyncio.create_task(client.start_order_book_ws("SBER", 1, "TQBR"))
-    task2 = asyncio.create_task(client.start_inventory_refresher())
-    task3 = asyncio.create_task(strategy.run())
-    task4 = asyncio.create_task(order_manager.run())
-
-    await asyncio.gather(task1, task2, task3)
+    await asyncio.gather(task1, task2)
     await client.close()
 
 if __name__ == "__main__":
