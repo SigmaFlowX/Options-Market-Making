@@ -4,7 +4,7 @@ import aiohttp
 import json
 from datetime import datetime, timedelta
 import uuid
-import pandas as pd
+
 
 
 
