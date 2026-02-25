@@ -155,7 +155,18 @@ class BrokerClient:
                     print("Connected?")
                     async for ms in ws:
                         data = json.loads(ms.data)
-                        print(data)
+                        order_id = data['clientOrderId']
+                        order_status = data['data']['orderStatus']
+
+                        if order_status in ['2', '4', '6', '8']:
+                            self.active_orders.pop(order_id)
+                        elif order_status == '1':
+                            self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
+                        else:
+                            self.active_orders[order_id] = order_status
+
+
+                        self.active_orders[order_id]['status'] = order_status
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while opening orders websocket order: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
