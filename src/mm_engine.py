@@ -168,8 +168,6 @@ class BrokerClient:
                             if order_id in self.active_orders:
                                 self.active_orders[order_id]['status'] = order_status
 
-
-                        self.active_orders[order_id]['status'] = order_status
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while opening orders websocket order: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
@@ -324,11 +322,14 @@ class BrokerClient:
             order_status = await self.get_order_status(id=order_id)
 
             if order_status['data']['orderStatus'] in ['2', '4', '6', '8']:
-                self.active_orders.pop(order_id)
+                if order_id in self.active_orders:
+                    self.active_orders.pop(order_id, None)
             elif order_status['data']['orderStatus'] == '1':
-                self.active_orders[order_id]['quantity'] = order_status['data']['remainedQuantity']
+                if order_id in self.active_orders:
+                    self.active_orders[order_id]['quantity'] = order_status['data']['remainedQuantity']
             else:
-                self.active_orders[order_id]['status'] = order_status['data']['orderStatus']
+                if order_id in self.active_orders:
+                    self.active_orders[order_id]['status'] = order_status['data']['orderStatus']
 
     async def edit_order(self, id, price, quantity):
         url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}"
@@ -558,17 +559,15 @@ class OrderManager:
                         break
 
                 if order_to_edit is None:
-                    # await self.client.place_limit_order(
-                    #     ticker=desired_order['ticker'],
-                    #     class_code=desired_order['class_code'],
-                    #     side=desired_order['side'],
-                    #     price=desired_order['price'],
-                    #     quantity=desired_order['quantity']
-                    # )
-                    print("OrderManager would place order")
+                    await self.client.place_limit_order(
+                        ticker=desired_order['ticker'],
+                        class_code=desired_order['class_code'],
+                        side=desired_order['side'],
+                        price=desired_order['price'],
+                        quantity=desired_order['quantity']
+                    )
                 else:
-                    #self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
-                    print("OrderManager would edit order")
+                    await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
             await asyncio.sleep(5)
 
@@ -580,11 +579,13 @@ async def main():
     order_manager = OrderManager(client=client)
     strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.5, 1, 5, 0.1)
 
+    task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
-    await asyncio.gather(task1, task2, task3, task4)
+    task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
+    await asyncio.gather(task0, task1, task2, task3, task4, task5)
     await client.close()
 
 if __name__ == "__main__":
