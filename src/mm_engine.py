@@ -152,18 +152,21 @@ class BrokerClient:
         while True:
             try:
                 async with self.session.ws_connect(url, headers=headers) as ws:
-                    print("Connected?")
+                    print("Connected orders ws")
                     async for ms in ws:
                         data = json.loads(ms.data)
                         order_id = data['clientOrderId']
                         order_status = data['data']['orderStatus']
 
                         if order_status in ['2', '4', '6', '8']:
-                            self.active_orders.pop(order_id)
+                            self.active_orders.pop(order_id, None)
                         elif order_status == '1':
-                            self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
+                            if order_id in self.active_orders:
+                                self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
+                                self.active_orders[order_id]['status'] = order_status
                         else:
-                            self.active_orders[order_id] = order_status
+                            if order_id in self.active_orders:
+                                self.active_orders[order_id]['status'] = order_status
 
 
                         self.active_orders[order_id]['status'] = order_status
@@ -325,7 +328,7 @@ class BrokerClient:
             elif order_status['data']['orderStatus'] == '1':
                 self.active_orders[order_id]['quantity'] = order_status['data']['remainedQuantity']
             else:
-                self.active_orders[order_id]['status'] = int(order_status['data']['orderStatus'])
+                self.active_orders[order_id]['status'] = order_status['data']['orderStatus']
 
     async def edit_order(self, id, price, quantity):
         url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}"
