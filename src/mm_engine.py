@@ -144,15 +144,22 @@ class BrokerClient:
                 print(f"Failed to update inventory \n {e}")
                 await asyncio.sleep(5)
 
-    async def start_orders_ws(self):  # Apparently not working currently
+    async def start_orders_ws(self):
         url = "wss://ws.broker.ru/trade-api-bff-operations/api/v1/orders/execution/ws"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        async with self.session.ws_connect(url, headers=headers) as ws:
-            print("Connected?")
-            async for ms in ws:
-                data = json.loads(ms.data)
-                print(data)
+        attempt = 0
+        while True:
+            try:
+                async with self.session.ws_connect(url, headers=headers) as ws:
+                    print("Connected?")
+                    async for ms in ws:
+                        data = json.loads(ms.data)
+                        print(data)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while opening orders websocket order: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
 
     async def get_all_active_orders(self):
         url = "https://be.broker.ru/trade-api-bff-order-details/api/v1/orders/search"
@@ -456,7 +463,7 @@ class OrderManager:
     async def run(self):
         while True:
             desired_orders = await self.q_desired_orders.get()
-            current_orders = self.client.actove_orders
+            current_orders = self.client.active_orders
             for desired_order in desired_orders:
 
                 order_to_edit = None
@@ -487,7 +494,7 @@ async def main():
     await client.start()
 
     task1 = asyncio.create_task(client.start_orders_ws())
-    #task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
+    task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
     #task2 = asyncio.create_task(client.edit_order("e438eaef-2046-4007-a3dd-d046135b4b45", 6, 1))
     await asyncio.gather(task1, task2)
     await client.close()
