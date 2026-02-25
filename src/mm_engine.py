@@ -138,7 +138,6 @@ class BrokerClient:
         while True:
             try:
                 await self.get_inventory()
-                print("Inventory updated")
                 await asyncio.sleep(5)
             except Exception as e:
                 print(f"Failed to update inventory \n {e}")
@@ -155,6 +154,7 @@ class BrokerClient:
                     print("Connected orders ws")
                     async for ms in ws:
                         data = json.loads(ms.data)
+                        print(f"Orders ws message: \n {data}")
                         order_id = data['clientOrderId']
                         order_status = data['data']['orderStatus']
 
@@ -252,7 +252,7 @@ class BrokerClient:
                         "status": '0'
                     }
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
-
+                    print(data)
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while placing order: \n {e}")
@@ -317,7 +317,7 @@ class BrokerClient:
                 attempt += 1
 
     async def force_update_orders_dict_status(self):
-
+        print(f"Current active orders: \n {self.active_orders}")
         for order_id in list(self.active_orders.keys()):
             order_status = await self.get_order_status(id=order_id)
 
@@ -425,7 +425,6 @@ class MVPStrategy:
                 print("Inventory missing(")
                 continue
             orders = self.generate_orders()
-            print(f"Current desired orders \n {orders}")
             if orders:
                 await self.order_manager.submit_orders(orders)
 
@@ -479,9 +478,9 @@ class MVPStrategy:
         }
 
         orders = []
-        if bid_size > 0:
+        if bid_size > 0 and self.inventory < self.inventory_limit:
             orders.append(bid_order)
-        if ask_size > 0:
+        if ask_size > 0 and self.inventory > 0:
             orders.append(ask_order)
 
         return orders if orders else None
@@ -570,7 +569,7 @@ class OrderManager:
                     if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.1:
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
