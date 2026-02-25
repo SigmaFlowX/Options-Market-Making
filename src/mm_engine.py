@@ -492,6 +492,7 @@ class MVPStrategy:
                 continue
 
             price = order["price"]
+            price = round(price, 2)
             qty = order["quantity"]
 
             if order["side"] == '1':
@@ -504,6 +505,7 @@ class MVPStrategy:
 
         for level in bids:
             price = level["price"]
+            price = round(price, 2)
             size = level["quantity"]
 
             my_size = my_bid_volume_by_price.get(price, 0)
@@ -515,6 +517,7 @@ class MVPStrategy:
 
         for level in asks:
             price = level["price"]
+            price = round(price, 2)
             size = level["quantity"]
 
             my_size = my_ask_volume_by_price.get(price, 0)
