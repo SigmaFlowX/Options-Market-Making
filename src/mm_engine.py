@@ -567,7 +567,8 @@ class OrderManager:
                         quantity=desired_order['quantity']
                     )
                 else:
-                    await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                    if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.1:
+                        await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
             await asyncio.sleep(5)
 
@@ -577,7 +578,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.5, 1, 5, 0.1)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.3, 1, 5, 0.1)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
