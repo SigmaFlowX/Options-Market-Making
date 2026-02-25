@@ -484,7 +484,7 @@ class OrderManager:
                         quantity=desired_order['quantity']
                     )
                 else:
-                    pass #edit order
+                    self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
             await asyncio.sleep(5)
 
