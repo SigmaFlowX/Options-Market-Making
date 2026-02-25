@@ -375,6 +375,11 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
+    async def start_forced_orders_dict_refresher(self):
+        while True:
+            await self.force_update_orders_dict_status()
+            await asyncio.sleep(10)
+
 
 
 
