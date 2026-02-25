@@ -86,6 +86,7 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
+                            print(data)
                             print("Orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
@@ -381,7 +382,7 @@ class MVPStrategy:
         while True:
             done, pending = await asyncio.wait(
                 [
-                    asyncio.create_task(self.client.q_orderbooks.get()),
+                    asyncio.create_task(self.client.q_orderbooks.get()), # have to add ticker comparasion in the future for multiple assets trading
                     asyncio.create_task(self.client.q_inventory.get())
                 ],
                 return_when=asyncio.FIRST_COMPLETED,
@@ -452,6 +453,52 @@ class MVPStrategy:
 
         return [bid_order, ask_order]
 
+    def get_best_bid_and_asks_from_orderbook(self, orderbook): #we have to exclude our own orders from orderbook to find real best bid and ask
+        bids = orderbook.get("bids", [])
+        asks = orderbook.get("asks", [])
+
+        my_bid_volume_by_price = {}
+        my_ask_volume_by_price = {}
+
+        for order in self.client.active_orders.values():
+            if order["ticker"] != self.ticker:
+                continue
+
+            price = order["price"]
+            qty = order["quantity"]
+
+            if order["side"] == '1':
+                my_bid_volume_by_price[price] = my_bid_volume_by_price.get(price, 0) + qty
+            else:
+                my_ask_volume_by_price[price] = my_ask_volume_by_price.get(price, 0) + qty
+
+        external_best_bid = None
+        external_best_ask = None
+
+        for level in bids:
+            price = level["price"]
+            size = level["quantity"]
+
+            my_size = my_bid_volume_by_price.get(price, 0)
+            external_size = size - my_size
+
+            if external_size > 0:
+                external_best_bid = price
+                break
+
+        for level in asks:
+            price = level["price"]
+            size = level["quantity"]
+
+            my_size = my_ask_volume_by_price.get(price, 0)
+            external_size = size - my_size
+
+            if external_size > 0:
+                external_best_ask = price
+                break
+
+        return external_best_bid, external_best_ask
+
 class OrderManager:
     def __init__(self, client):
         self.client = client
@@ -493,10 +540,8 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    task1 = asyncio.create_task(client.start_orders_ws())
-    task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
-    #task2 = asyncio.create_task(client.edit_order("e438eaef-2046-4007-a3dd-d046135b4b45", 6, 1))
-    await asyncio.gather(task1, task2)
+    task = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
+    await asyncio.gather(task)
     await client.close()
 
 if __name__ == "__main__":
