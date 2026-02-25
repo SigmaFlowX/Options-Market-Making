@@ -307,6 +307,41 @@ class BrokerClient:
             else:
                 self.active_orders[order_id]['status'] = int(order_status['data']['orderStatus'])
 
+    async def edit_order(self, id, price, quantity):
+        url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}"
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.access_token}'
+        }
+
+        attempt = 0
+        while True:
+            new_id = str(uuid.uuid4())
+            payload = {
+                "clientOrderId": new_id,
+                "price": price,
+                "orderQuantity": quantity
+            }
+
+            try:
+                async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while editing order order \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    print("edited order succesfully")
+                    break
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+
+
 
 
 class MVPStrategy:
@@ -441,7 +476,7 @@ async def main():
     await client.start()
 
     task1 = asyncio.create_task(client.start_orders_ws())
-    task2 = asyncio.create_task(client.place_limit_order("SR310CB6D", "OPTSPOT", 1, 7, 1 ))
+    task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
 
     await asyncio.gather(task1, task2)
     await client.close()
