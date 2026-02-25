@@ -404,6 +404,9 @@ class MVPStrategy:
                 return_when=asyncio.FIRST_COMPLETED,
             )
 
+            for task in pending:
+                task.cancel()
+
             for task in done:
                 data = task.result()
 
