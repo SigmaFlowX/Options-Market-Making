@@ -86,7 +86,6 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
-                            print(data)
                             print("Orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
@@ -392,13 +391,15 @@ class MVPStrategy:
                 data = task.result()
 
                 if "depth" in data:
-                    self.best_ask = data['asks'][0]['price']
-                    self.best_bid = data['bids'][0]['price']
+                    self.best_ask, self.best_bid = self.get_best_bid_and_asks_from_orderbook(data)
                 else:
                     self.inventory = data.get(self.ticker, 0)
 
+            if self.inventory is None:
+                print("Inventory missing(")
+                continue
             orders = self.generate_orders()
-
+            print(f"Current desired orders \n {orders}")
             if orders:
                 await self.order_manager.submit_orders(orders)
 
@@ -451,7 +452,13 @@ class MVPStrategy:
             "quantity": bid_size
         }
 
-        return [bid_order, ask_order]
+        orders = []
+        if bid_size > 0:
+            orders.append(bid_order)
+        if ask_size > 0:
+            orders.append(ask_order)
+
+        return orders if orders else None
 
     def get_best_bid_and_asks_from_orderbook(self, orderbook): #we have to exclude our own orders from orderbook to find real best bid and ask
         bids = orderbook.get("bids", [])
@@ -523,15 +530,17 @@ class OrderManager:
                         break
 
                 if order_to_edit is None:
-                    await self.client.place_limit_order(
-                        ticker=desired_order['ticker'],
-                        class_code=desired_order['class_code'],
-                        side=desired_order['side'],
-                        price=desired_order['price'],
-                        quantity=desired_order['quantity']
-                    )
+                    # await self.client.place_limit_order(
+                    #     ticker=desired_order['ticker'],
+                    #     class_code=desired_order['class_code'],
+                    #     side=desired_order['side'],
+                    #     price=desired_order['price'],
+                    #     quantity=desired_order['quantity']
+                    # )
+                    print("OrderManager would place order")
                 else:
-                    self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                    #self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                    print("OrderManager would edit order")
 
             await asyncio.sleep(5)
 
@@ -540,8 +549,14 @@ async def main():
     client = BrokerClient(token)
     await client.start()
 
-    task = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
-    await asyncio.gather(task)
+    order_manager = OrderManager(client=client)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.5, 1, 5, 0.1)
+
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
+    task2 = asyncio.create_task(client.start_inventory_refresher())
+    task3 = asyncio.create_task(strategy.run())
+    task4 = asyncio.create_task(order_manager.run())
+    await asyncio.gather(task1, task2, task3, task4)
     await client.close()
 
 if __name__ == "__main__":
