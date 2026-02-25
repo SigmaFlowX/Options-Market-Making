@@ -465,7 +465,7 @@ class MVPStrategy:
         ask_order = {
             "ticker": self.ticker,
             "class_code": self.class_code,
-            "side": '0',
+            "side": '2',
             "price": round(ask,2),
             "quantity": ask_size
         }
