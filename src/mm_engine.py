@@ -204,6 +204,8 @@ class BrokerClient:
             "Authorization": f"Bearer {self.access_token}"
         }
 
+        price = round(price, 2)
+
         attempt = 0
         while True:
             client_order_id = str(uuid.uuid4())
@@ -322,6 +324,7 @@ class BrokerClient:
             'Accept': 'application/json',
             'Authorization': f'Bearer {self.access_token}'
         }
+        price = round(price, 2)
 
         attempt = 0
         while True:
@@ -440,7 +443,7 @@ class MVPStrategy:
             "ticker": self.ticker,
             "class_code": self.class_code,
             "side": '0',
-            "price": ask,
+            "price": round(ask,2),
             "quantity": ask_size
         }
 
@@ -448,7 +451,7 @@ class MVPStrategy:
             "ticker": self.ticker,
             "class_code": self.class_code,
             "side": '1',
-            "price": bid,
+            "price": round(bid,2),
             "quantity": bid_size
         }
 
