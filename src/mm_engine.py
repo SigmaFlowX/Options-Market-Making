@@ -230,7 +230,7 @@ class BrokerClient:
                         "quantity": quantity,
                         "status": '0'
                     }
-                    print(f"Placed order for {ticker} at price {price} with quantity {quantity}")
+                    print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
 
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -333,7 +333,18 @@ class BrokerClient:
                         await asyncio.sleep(3 + 2 * attempt)
                         attempt += 1
                         continue
-                    print("edited order succesfully")
+
+                    side, ticker, class_code = self.active_orders[id]['side'], self.active_orders[id]['ticker'], self.active_orders[id]['class_code']
+                    self.active_orders.pop(id, None)
+                    self.active_orders[new_id] = {
+                        "ticker": ticker,
+                        "class_code": class_code,
+                        "side": side,
+                        "price": price,
+                        "quantity": quantity,
+                        "status": '0'
+                    }
+                    print(f"edited order {id} with ticker {ticker} \n new price {price}, quantity = {quantity}")
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
@@ -452,7 +463,7 @@ class OrderManager:
                 order_id_to_edit = None
 
                 for client_id, order in current_orders.items():
-                    if (order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"]):
+                    if order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"]:
                         order_to_edit = order
                         order_id_to_edit = client_id
                         break
@@ -476,8 +487,8 @@ async def main():
     await client.start()
 
     task1 = asyncio.create_task(client.start_orders_ws())
-    task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
-
+    #task2 = asyncio.create_task(client.place_limit_order("SR310CC6A", "OPTSPOT", 1, 6, 1 ))
+    #task2 = asyncio.create_task(client.edit_order("e438eaef-2046-4007-a3dd-d046135b4b45", 6, 1))
     await asyncio.gather(task1, task2)
     await client.close()
 
