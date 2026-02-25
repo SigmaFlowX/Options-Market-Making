@@ -48,6 +48,7 @@ def get_option_maturity_date(token, stock_ticker, option_ticker, sleep_time=5, s
         response.raise_for_status()
 
         data = response.json()
+        print(data)
         if not data:
             break
 
@@ -356,7 +357,11 @@ def price_option_using_bs(token, spot_ticker, option_ticker):
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
 
-    print(price_option_using_bs(access_token, "SBER", "SR300CB6"))
+    get_option_maturity_date(access_token, "T", "TI3500CB6D")
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(spot_df.index, spot_df['close'])
+    # plt.show()
 
 #
 #     #
