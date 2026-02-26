@@ -455,6 +455,8 @@ class MVPStrategy:
         bid_size = max(1, bid_size)
         ask_size = max(1, ask_size)
 
+        if self.inventory == 0.0:
+            ask_size = 0
         if self.inventory >= self.inventory_limit:
             bid_size = 0
         elif self.inventory <= -self.inventory_limit:
