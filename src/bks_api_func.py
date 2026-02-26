@@ -8,6 +8,8 @@ import os
 import pandas as pd
 import time
 
+#IN THIS PROJECT THESE FUNCTIONS ARE USED AS A REFERENCE AND ARE NOT DIRECTLY INCLUDED IN ANY CODE
+
 BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 TOKEN_FILE = os.path.join(DATA_DIR, "bks_token.txt")
