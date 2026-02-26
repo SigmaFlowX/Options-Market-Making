@@ -570,7 +570,7 @@ class OrderManager:
                     if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.1:
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(0.5)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
