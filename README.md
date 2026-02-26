@@ -3,7 +3,7 @@ This project is purely for educational purposes and I personally do not exepct i
 1) I don't have market maker fees on the exchange
 2) I am not hunting super low latencies with my code but that is aboslutely necessary for market making
 
-Options market is chosen beacuse of its high spreads and low liquidity thanks to which I won't burn a ton of moeny in fees while testing and really not care about latency. 
+Options market is chosen beacuse of its high spreads and low liquidity thanks to which I won't burn a ton of moeny in fees while testing and can really not care about latency. 
    
 Then what is it for? <br>
 Well, first of all it's my first ever LIVE trading bot experience, so I can learn to work with brokers api and asyncio. <br>
