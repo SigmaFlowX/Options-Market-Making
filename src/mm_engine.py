@@ -86,7 +86,6 @@ class BrokerClient:
                             except Exception as e:
                                 print("Invalid json")
                                 continue
-                            print("Orderbook updated")
                             await self.q_orderbooks.put(data)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
@@ -482,7 +481,7 @@ class MVPStrategy:
             orders.append(bid_order)
         if ask_size > 0 and self.inventory > 0:
             orders.append(ask_order)
-
+        print(f"Current inventory: {self.inventory}")
         return orders if orders else None
 
     def get_best_bid_and_asks_from_orderbook(self, orderbook): #we have to exclude our own orders from orderbook to find real best bid and ask
@@ -577,7 +576,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.3, 1, 5, 0.1)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.1, 1, 5, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
