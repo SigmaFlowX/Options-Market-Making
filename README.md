@@ -20,5 +20,5 @@ It can already trade live and right now I am actively testing key components.
 ## What is left to do 
 
 1) Cancelling redundant orders and overall having some kind of database would be great.
-2) Active delta hedging with underlying asset or a futures
-3) Improving the strategy itself 
+2) Active delta hedging with underlying asset or a futures.
+3) Improving the strategy itself.
