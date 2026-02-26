@@ -380,10 +380,6 @@ class BrokerClient:
             await self.force_update_orders_dict_status()
             await asyncio.sleep(10)
 
-
-
-
-
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code,  spread, order_size, inventory_limit, inventory_k):
         self.client = client
@@ -567,7 +563,7 @@ class OrderManager:
                         quantity=desired_order['quantity']
                     )
                 else:
-                    if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.1:
+                    if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.01:
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
             await asyncio.sleep(0.5)
