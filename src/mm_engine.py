@@ -381,12 +381,11 @@ class BrokerClient:
             await asyncio.sleep(10)
 
 class MVPStrategy:
-    def __init__(self, client, order_manager, ticker, class_code,  spread, order_size, inventory_limit, inventory_k):
+    def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
         self.client = client
         self.order_manager = order_manager
         self.ticker = ticker
         self.class_code = class_code
-        self.spread = spread
         self.order_size = order_size
         self.inventory_limit = inventory_limit
         self.inventory_k = inventory_k
@@ -428,13 +427,13 @@ class MVPStrategy:
             return None
 
         mid = (self.best_bid + self.best_ask) / 2
-        half_spread = self.spread / 2
+        half_spread = (self.best_ask - self.best_bid) / 2
 
         inventory_shift = self.inventory_k * self.inventory
         center = mid - inventory_shift
 
-        bid = center - half_spread
-        ask = center + half_spread
+        bid = center - half_spread + 0.01
+        ask = center + half_spread - 0.01
 
         bid = min(bid, self.best_bid)
         ask = max(ask, self.best_ask)
@@ -542,6 +541,7 @@ class OrderManager:
     async def run(self):
         while True:
             desired_orders = await self.q_desired_orders.get()
+            print(f"Desired orders: \n {desired_orders}")
             current_orders = self.client.active_orders
             for desired_order in desired_orders:
 
@@ -574,10 +574,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT",  0.1, 1, 5, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 1, 5, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR320CC6A", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
