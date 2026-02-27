@@ -451,7 +451,7 @@ class MVPStrategy:
         ask_size = max(1, ask_size)
 
         if ask_size > self.inventory:
-            ask_size = ask.inventory
+            ask_size = self.inventory
 
         if self.inventory == 0.0:
             ask_size = 0
@@ -577,7 +577,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 1, 50, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 10, 50, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR320CC6A", class_code="OPTSPOT", depth=5))
