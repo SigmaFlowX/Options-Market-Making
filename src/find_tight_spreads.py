@@ -3,6 +3,8 @@ import requests
 from bks_api_func import authorize
 import os
 import time
+
+
 def get_tickers(instrument_type, access_token, class_code):
     url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
 
@@ -46,12 +48,10 @@ def get_tickers(instrument_type, access_token, class_code):
         page += 1
     return tickers
 
-
-
-
-
+def get_spread_by_ticker():
+    pass
 
 if __name__ == "__main__":
     refresh_token = os.getenv("BKS_TOKEN")
     token = authorize(refresh_token)
-    print(get_tickers("STOCK", token, "TQBR"))
+    all_tickers = get_tickers("STOCK", token, "TQBR")
