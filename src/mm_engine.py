@@ -137,7 +137,7 @@ class BrokerClient:
         while True:
             try:
                 await self.get_inventory()
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
             except Exception as e:
                 print(f"Failed to update inventory \n {e}")
                 await asyncio.sleep(5)
@@ -378,7 +378,7 @@ class BrokerClient:
     async def start_forced_orders_dict_refresher(self):
         while True:
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(10)
+            await asyncio.sleep(2)
 
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
@@ -427,7 +427,7 @@ class MVPStrategy:
             return None
 
         mid = (self.best_bid + self.best_ask) / 2
-        half_spread = (self.best_ask - self.best_bid) / 2
+        half_spread = abs((self.best_ask - self.best_bid)) / 2
 
         inventory_shift = self.inventory_k * self.inventory
         center = mid - inventory_shift
@@ -574,7 +574,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 1, 5, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 1, 50, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR320CC6A", class_code="OPTSPOT", depth=5))
