@@ -566,7 +566,10 @@ class OrderManager:
                         quantity=desired_order['quantity']
                     )
                 else:
-                    if abs(desired_order['price'] - current_orders[order_id_to_edit]['price']) >= 0.01:
+                    if (
+                            abs(desired_order['price'] - order_to_edit['price']) >= 0.01 or
+                            desired_order['quantity'] != order_to_edit['quantity']
+                    ):
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
             await asyncio.sleep(0.5)
