@@ -243,6 +243,14 @@ class BrokerClient:
                     client_order_id = data['clientOrderId']
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
                     print(data)
+                    self.active_orders[client_order_id] = {
+                        "ticker": ticker,
+                        "class_code": class_code,
+                        "side": side,
+                        "price": price,
+                        "quantity": quantity,
+                        "status": '0'
+                    }
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while placing order: \n {e}")
@@ -369,7 +377,7 @@ class BrokerClient:
     async def start_forced_orders_dict_refresher(self):
         while True:
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
@@ -580,10 +588,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR300CC6A", "OPTSPOT", 10, 50, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 10, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR300CC6A", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
