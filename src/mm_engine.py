@@ -251,6 +251,7 @@ class BrokerClient:
                         "quantity": quantity,
                         "status": '0'
                     }
+                    return client_order_id
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while placing order: \n {e}")
@@ -545,7 +546,7 @@ class OrderManager:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
             current_orders = self.client.active_orders
-            print(current_orders)
+            print(f"Active orders in order manager {current_orders}")
 
             occupied_ids = []
             for desired_order in desired_orders:         # На переработку: сделать цикл не по desired orders, а по active orders. Редактировать, если сторона и тикер совпадают и удалить ордер из desired. Если нет, то отменить. Далее для оставшихся desired выставить новые ордера.
@@ -554,31 +555,33 @@ class OrderManager:
                 order_id_to_edit = None
 
                 for client_id, order in current_orders.items():
-                    if order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"] and client_id not in occupied_ids:
+                    if order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"]: #and client_id not in occupied_ids:
                         order_to_edit = order
                         order_id_to_edit = client_id
                         break
 
                 if order_to_edit is None:
-                    await self.client.place_limit_order(
+                    order_id = await self.client.place_limit_order(
                         ticker=desired_order['ticker'],
                         class_code=desired_order['class_code'],
                         side=desired_order['side'],
                         price=desired_order['price'],
                         quantity=desired_order['quantity']
                     )
+                    occupied_ids.append(order_id)
                 else:
+                    occupied_ids.append(order_id_to_edit)
                     if (
                             abs(desired_order['price'] - order_to_edit['price']) >= 0.01 or
                             desired_order['quantity'] != order_to_edit['quantity']
                     ):
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
-                    occupied_ids.append(order_id_to_edit)
 
-            #cancelling redundant orders
-            for client_id, order in current_orders.items():
-                if client_id not in occupied_ids:
-                    await self.client.cancel_order(id=client_id)
+                print(f"occupied ids: {occupied_ids}")
+            # #cancelling redundant orders
+            for client_id, order in list(current_orders.items()):
+                 if client_id not in occupied_ids:
+                     await self.client.cancel_order(id=client_id)
 
             await asyncio.sleep(0.5)
 
