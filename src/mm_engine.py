@@ -462,7 +462,7 @@ class MVPStrategy:
             "class_code": self.class_code,
             "side": '2',
             "price": round(ask,2),
-            "quantity": ask_size
+            "quantity": round(ask_size)
         }
 
         bid_order = {
@@ -470,7 +470,7 @@ class MVPStrategy:
             "class_code": self.class_code,
             "side": '1',
             "price": round(bid,2),
-            "quantity": bid_size
+            "quantity": round(bid_size)
         }
 
         orders = []
@@ -542,7 +542,7 @@ class OrderManager:
         while True:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
-            current_orders = self.client.active_orders
+            current_orders = self.client.active_orders.copy()
 
             occupied_ids = []
             for desired_order in desired_orders:
@@ -586,10 +586,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT", 5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
