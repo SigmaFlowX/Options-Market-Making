@@ -5,9 +5,6 @@ import json
 from datetime import datetime, timedelta
 import uuid
 
-
-
-
 class BrokerClient:
     def __init__(self, token):
         self.refresh_token = token
@@ -546,10 +543,9 @@ class OrderManager:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
             current_orders = self.client.active_orders
-            print(f"Active orders in order manager {current_orders}")
 
             occupied_ids = []
-            for desired_order in desired_orders:         # На переработку: сделать цикл не по desired orders, а по active orders. Редактировать, если сторона и тикер совпадают и удалить ордер из desired. Если нет, то отменить. Далее для оставшихся desired выставить новые ордера.
+            for desired_order in desired_orders:
 
                 order_to_edit = None
                 order_id_to_edit = None
@@ -577,7 +573,6 @@ class OrderManager:
                     ):
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
 
-                print(f"occupied ids: {occupied_ids}")
             # #cancelling redundant orders
             for client_id, order in list(current_orders.items()):
                  if client_id not in occupied_ids:
@@ -591,10 +586,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 10, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT", 5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
