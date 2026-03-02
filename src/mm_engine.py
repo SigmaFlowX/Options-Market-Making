@@ -241,15 +241,6 @@ class BrokerClient:
 
                     data = await resp.json()
                     client_order_id = data['clientOrderId']
-
-                    self.active_orders[client_order_id] = {
-                        "ticker": ticker,
-                        "class_code": class_code,
-                        "side": side,
-                        "price": price,
-                        "quantity": quantity,
-                        "status": '0'
-                    }
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
                     print(data)
                     break
@@ -546,13 +537,16 @@ class OrderManager:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
             current_orders = self.client.active_orders
-            for desired_order in desired_orders:
+            print(current_orders)
+
+            occupied_ids = []
+            for desired_order in desired_orders:         # На переработку: сделать цикл не по desired orders, а по active orders. Редактировать, если сторона и тикер совпадают и удалить ордер из desired. Если нет, то отменить. Далее для оставшихся desired выставить новые ордера.
 
                 order_to_edit = None
                 order_id_to_edit = None
 
                 for client_id, order in current_orders.items():
-                    if order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"]:
+                    if order["ticker"] == desired_order["ticker"] and order["side"] == desired_order["side"] and client_id not in occupied_ids:
                         order_to_edit = order
                         order_id_to_edit = client_id
                         break
@@ -571,6 +565,12 @@ class OrderManager:
                             desired_order['quantity'] != order_to_edit['quantity']
                     ):
                         await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                    occupied_ids.append(order_id_to_edit)
+
+            #cancelling redundant orders
+            for client_id, order in current_orders.items():
+                if client_id not in occupied_ids:
+                    await self.client.cancel_order(id=client_id)
 
             await asyncio.sleep(0.5)
 
@@ -580,10 +580,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR320CC6A", "OPTSPOT", 10, 50, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR300CC6A", "OPTSPOT", 10, 50, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR320CC6A", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR300CC6A", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
