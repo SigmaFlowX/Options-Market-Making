@@ -569,12 +569,22 @@ class OrderManager:
                     )
                     occupied_ids.append(order_id)
                 else:
-                    occupied_ids.append(order_id_to_edit)
                     if (
                             abs(desired_order['price'] - order_to_edit['price']) >= 0.01 or
                             desired_order['quantity'] != order_to_edit['quantity']
                     ):
-                        await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                        try:
+                            await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                            occupied_ids.append(order_id_to_edit)
+                        except ValueError:
+                            order_id = await self.client.place_limit_order(
+                                ticker=desired_order['ticker'],
+                                class_code=desired_order['class_code'],
+                                side=desired_order['side'],
+                                price=desired_order['price'],
+                                quantity=desired_order['quantity']
+                            )
+                            occupied_ids.append(order_id)
 
             # #cancelling redundant orders
             for client_id, order in list(current_orders.items()):
