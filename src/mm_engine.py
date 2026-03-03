@@ -348,6 +348,9 @@ class BrokerClient:
 
             try:
                 async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status == 400:
+                        text = await resp.text()
+                        raise ValueError(f"Bad request while editing order {id}: {text}")
                     if resp.status != 200:
                         text = await resp.text()
                         print(f"Invalid response while editing order order \n {resp.status} \n {text}")
@@ -586,10 +589,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT", 5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
