@@ -137,7 +137,7 @@ class BrokerClient:
                 await asyncio.sleep(1)
             except Exception as e:
                 print(f"Failed to update inventory \n {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
     async def start_orders_ws(self):
         url = "wss://ws.broker.ru/trade-api-bff-operations/api/v1/orders/execution/ws"
@@ -378,7 +378,7 @@ class BrokerClient:
     async def start_forced_orders_dict_refresher(self):
         while True:
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
@@ -545,7 +545,7 @@ class OrderManager:
         while True:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
-            current_orders = self.client.active_orders.copy()
+            current_orders = self.client.active_orders
 
             occupied_ids = []
             for desired_order in desired_orders:
@@ -569,6 +569,7 @@ class OrderManager:
                     )
                     occupied_ids.append(order_id)
                 else:
+                    occupied_ids.append(order_id_to_edit)
                     if (
                             abs(desired_order['price'] - order_to_edit['price']) >= 0.01 or
                             desired_order['quantity'] != order_to_edit['quantity']
@@ -599,10 +600,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6A", "OPTSPOT", 5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 10, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6A", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
