@@ -369,6 +369,7 @@ class BrokerClient:
                         "status": '0'
                     }
                     print(f"edited order {id} with ticker {ticker} \n new price {price}, quantity = {quantity}")
+                    return new_id
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
@@ -575,8 +576,8 @@ class OrderManager:
                             desired_order['quantity'] != order_to_edit['quantity']
                     ):
                         try:
-                            await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
-                            occupied_ids.append(order_id_to_edit)
+                            order_id = await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
+                            occupied_ids.append(order_id)
                         except ValueError:
                             order_id = await self.client.place_limit_order(
                                 ticker=desired_order['ticker'],
@@ -600,7 +601,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 10, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
