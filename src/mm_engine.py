@@ -271,6 +271,9 @@ class BrokerClient:
             }
             try:
                 async with self.session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status == 400:
+                        text = await resp.text()
+                        raise ValueError(f"Bad request while cancelling order {id}: {text}")
                     if resp.status != 200:
                         text = await resp.text()
                         print(f"Invalid response while canceling order \n {resp.status} \n {text}")
@@ -379,7 +382,7 @@ class BrokerClient:
     async def start_forced_orders_dict_refresher(self):
         while True:
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
 
 class MVPStrategy:
     def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
@@ -591,7 +594,11 @@ class OrderManager:
             # #cancelling redundant orders
             for client_id, order in list(current_orders.items()):
                  if client_id not in occupied_ids:
-                     await self.client.cancel_order(id=client_id)
+                     try:
+                        await self.client.cancel_order(id=client_id)
+                     except ValueError:
+                         continue
+
 
             await asyncio.sleep(0.5)
 
