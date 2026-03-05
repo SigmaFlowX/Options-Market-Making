@@ -1,5 +1,7 @@
 import asyncio
 import os
+from multiprocessing.managers import Value
+
 import aiohttp
 import json
 from datetime import datetime, timedelta
@@ -299,9 +301,11 @@ class BrokerClient:
         while True:
             try:
                 async with self.session.get(url, headers=headers, data=payload) as resp:
+                    if resp.status == 400 or resp.status == 404:
+                        raise ValueError("Unable to get order status, the order is likely gone")
                     if resp.status != 200:
                         text = await resp.text()
-                        print(f"Invalid response while while placing order \n {resp.status} \n {text}")
+                        print(f"Invalid response while updating order status \n {resp.status} \n {text}")
                         await asyncio.sleep(3 + 2 * attempt)
                         attempt += 1
                         continue
@@ -315,7 +319,11 @@ class BrokerClient:
     async def force_update_orders_dict_status(self):
         print(f"Current active orders: \n {self.active_orders}")
         for order_id in list(self.active_orders.keys()):
-            order_status = await self.get_order_status(id=order_id)
+            try:
+                order_status = await self.get_order_status(id=order_id)
+            except ValueError:
+                self.active_orders.pop(order_id, None)
+                continue
 
             if order_status['data']['orderStatus'] in ['2', '4', '6', '8']:
                 if order_id in self.active_orders:
