@@ -3,7 +3,9 @@ import os
 import aiohttp
 import json
 from datetime import datetime, timedelta
+from datetime import timezone
 import uuid
+from black_scholes import solve_black_scholes
 
 class BrokerClient:
     def __init__(self, token):
@@ -387,8 +389,49 @@ class BrokerClient:
             await self.force_update_orders_dict_status()
             await asyncio.sleep(1)
 
+    async def get_current_price(self, ticker, class_code): # will be used to get spot price of the underlying asset to solve Black-Scholes equation
+        url = "https://be.broker.ru/trade-api-market-data-connector/api/v1/candles-chart"
+
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=40)
+        start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}"
+        }
+        payload = {
+            "classCode": class_code,
+            "ticker": ticker,
+            "startDate": start_date_str,
+            "endDate": end_date_str,
+            "timeFrame": "MN"
+        }
+
+        attempt = 0
+        while True:
+            try:
+                async with self.session.get(url, headers=headers, data=payload) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        print(f"Invalid response while getting candles \n {resp.status} \n {text}")
+                        await asyncio.sleep(3 + 2 * attempt)
+                        attempt += 1
+                        continue
+                    data = await resp.json()
+                    candles = data.get("bars", [])
+                    if candles:
+                        return candles[0]['close']
+                    else:
+                        return None
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while getting order status: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
+
 class MVPStrategy:
-    def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
+    def __init__(self, client, order_manager, ticker, class_code, underlying_asset, order_size, inventory_limit, inventory_k):
         self.client = client
         self.order_manager = order_manager
         self.ticker = ticker
@@ -405,7 +448,7 @@ class MVPStrategy:
         while True:
             done, pending = await asyncio.wait(
                 [
-                    asyncio.create_task(self.client.q_orderbooks.get()), # have to add ticker comparasion in the future for multiple assets trading
+                    asyncio.create_task(self.client.q_orderbooks.get()), # have to add ticker comparison in the future for multiple assets trading
                     asyncio.create_task(self.client.q_inventory.get())
                 ],
                 return_when=asyncio.FIRST_COMPLETED,
@@ -616,7 +659,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", 5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", "SBER", 5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
