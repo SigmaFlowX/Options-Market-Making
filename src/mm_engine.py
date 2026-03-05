@@ -317,7 +317,6 @@ class BrokerClient:
                 attempt += 1
 
     async def force_update_orders_dict_status(self):
-        print(f"Current active orders: \n {self.active_orders}")
         for order_id in list(self.active_orders.keys()):
             try:
                 order_status = await self.get_order_status(id=order_id)
@@ -334,6 +333,7 @@ class BrokerClient:
             else:
                 if order_id in self.active_orders:
                     self.active_orders[order_id]['status'] = order_status['data']['orderStatus']
+        print(f"Current active orders: \n {self.active_orders}")
 
     async def edit_order(self, id, price, quantity):
         url = f"https://be.broker.ru/trade-api-bff-operations/api/v1/orders/{id}"
@@ -386,8 +386,9 @@ class BrokerClient:
 
     async def start_forced_orders_dict_refresher(self):
         while True:
+            print("updating orders...")
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.2)
 
     async def get_current_price(self, ticker, class_code): # will be used to get spot price of the underlying asset to solve Black-Scholes equation
         url = "https://be.broker.ru/trade-api-market-data-connector/api/v1/candles-chart"
@@ -596,11 +597,10 @@ class OrderManager:
         while True:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
-            current_orders = self.client.active_orders
 
             occupied_ids = []
             for desired_order in desired_orders:
-
+                current_orders = self.client.active_orders  #get the freshest one each time
                 order_to_edit = None
                 order_id_to_edit = None
 
@@ -652,7 +652,7 @@ class OrderManager:
                          continue
 
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.0)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
