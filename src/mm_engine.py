@@ -432,7 +432,7 @@ class BrokerClient:
 
 
 class MVPStrategy:
-    def __init__(self, client, order_manager, ticker, class_code, underlying_asset, order_size, inventory_limit, inventory_k):
+    def __init__(self, client, order_manager, ticker, class_code, order_size, inventory_limit, inventory_k):
         self.client = client
         self.order_manager = order_manager
         self.ticker = ticker
@@ -660,7 +660,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT", "SBER", 5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT",5, 15, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
@@ -668,8 +668,7 @@ async def main():
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
     task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
-    task6 = asyncio.create_task(client.get_current_price("SBER", "TQBR"))
-    await asyncio.gather(task0, task1, task2, task3, task4, task5, task6)
+    await asyncio.gather(task0, task1, task2, task3, task4, task5)
     await client.close()
 
 if __name__ == "__main__":
