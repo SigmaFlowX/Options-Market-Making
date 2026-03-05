@@ -567,6 +567,7 @@ class OrderManager:
                         break
 
                 if order_to_edit is None:
+                    print("Found not matchers, so editing order")
                     order_id = await self.client.place_limit_order(
                         ticker=desired_order['ticker'],
                         class_code=desired_order['class_code'],
@@ -576,15 +577,19 @@ class OrderManager:
                     )
                     occupied_ids.append(order_id)
                 else:
+                    print("Found a match")
                     occupied_ids.append(order_id_to_edit)
                     if (
                             abs(desired_order['price'] - order_to_edit['price']) >= 0.01 or
                             desired_order['quantity'] != order_to_edit['quantity']
                     ):
+                        print("Trying to edit")
                         try:
                             order_id = await self.client.edit_order(id=order_id_to_edit, price=desired_order['price'], quantity=desired_order['quantity'])
                             occupied_ids.append(order_id)
+                            print("Edited ")
                         except ValueError:
+                            print("Failed to edit, placing order now")
                             order_id = await self.client.place_limit_order(
                                 ticker=desired_order['ticker'],
                                 class_code=desired_order['class_code'],
