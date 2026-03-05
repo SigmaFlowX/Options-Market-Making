@@ -1,7 +1,5 @@
 import asyncio
 import os
-from multiprocessing.managers import Value
-
 import aiohttp
 import json
 from datetime import datetime, timedelta
