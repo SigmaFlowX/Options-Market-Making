@@ -156,13 +156,10 @@ class BrokerClient:
 
                         if order_status in ['2', '4', '6', '8']:
                             self.active_orders.pop(order_id, None)
-                        elif order_status == '1':
-                            if order_id in self.active_orders:
-                                self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
-                                self.active_orders[order_id]['status'] = order_status
                         else:
-                            if order_id in self.active_orders:
-                                self.active_orders[order_id]['status'] = order_status
+                            self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
+                            self.active_orders[order_id]['status'] = order_status
+
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while opening orders websocket order: \n {e}")
@@ -271,7 +268,7 @@ class BrokerClient:
             }
             try:
                 async with self.session.post(url, headers=headers, json=payload) as resp:
-                    if resp.status == 400:
+                    if resp.status == 400 or resp.status == 404:
                         text = await resp.text()
                         raise ValueError(f"Bad request while cancelling order {id}: {text}")
                     if resp.status != 200:
@@ -351,7 +348,7 @@ class BrokerClient:
 
             try:
                 async with self.session.post(url, headers=headers, json=payload) as resp:
-                    if resp.status == 400:
+                    if resp.status == 400 or resp.status == 404:
                         text = await resp.text()
                         raise ValueError(f"Bad request while editing order {id}: {text}")
                     if resp.status != 200:
@@ -600,7 +597,7 @@ class OrderManager:
                          continue
 
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
