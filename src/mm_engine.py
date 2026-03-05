@@ -411,7 +411,7 @@ class BrokerClient:
         attempt = 0
         while True:
             try:
-                async with self.session.get(url, headers=headers, data=payload) as resp:
+                async with self.session.get(url, headers=headers, params=payload) as resp:
                     if resp.status != 200:
                         text = await resp.text()
                         print(f"Invalid response while getting candles \n {resp.status} \n {text}")
@@ -421,6 +421,7 @@ class BrokerClient:
                     data = await resp.json()
                     candles = data.get("bars", [])
                     if candles:
+                        print(f"Got current price of {ticker}: {candles[0]['close']}")
                         return candles[0]['close']
                     else:
                         return None
@@ -610,7 +611,7 @@ class OrderManager:
                         break
 
                 if order_to_edit is None:
-                    print("Found not matchers, so editing order")
+                    print("Found no matches, so placing a new order")
                     order_id = await self.client.place_limit_order(
                         ticker=desired_order['ticker'],
                         class_code=desired_order['class_code'],
@@ -667,7 +668,8 @@ async def main():
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
     task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
-    await asyncio.gather(task0, task1, task2, task3, task4, task5)
+    task6 = asyncio.create_task(client.get_current_price("SBER", "TQBR"))
+    await asyncio.gather(task0, task1, task2, task3, task4, task5, task6)
     await client.close()
 
 if __name__ == "__main__":
