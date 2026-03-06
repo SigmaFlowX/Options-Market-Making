@@ -543,7 +543,7 @@ class MVPStrategy:
 
         s =  (self.best_bid + self.best_ask) / 2 #mid
         r = s - q * gamma * sigma**2 * tau
-        delta = 1/gamma * math.log(1+ + gamma/k) + 1/2 * gamma * sigma**2 * tau
+        delta = 1/gamma * math.log(1 + gamma/k) + 1/2 * gamma * sigma**2 * tau
 
         optimal_bid = round(r - delta, 2)
         optimal_ask = round(r + delta, 2)
