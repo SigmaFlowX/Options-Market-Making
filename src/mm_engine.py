@@ -548,11 +548,19 @@ class MVPStrategy:
         optimal_bid = round(r - delta, 2)
         optimal_ask = round(r + delta, 2)
 
+        optimal_bid = min(optimal_bid, self.best_ask - 0.01)
+        optimal_ask = max(optimal_ask, self.best_bid + 0.01)
+
         bid_size = round(self.order_size * max(0, 1 - q / self.inventory_limit))
         ask_size = round(self.order_size * max(0, 1 + q / self.inventory_limit))
 
         if ask_size > q: #cannot put sell orders larger than inventory
             ask_size = q
+
+        if ask_size < 0:
+            ask_size = 0
+        if bid_size < 0:
+            bid_size = 0
 
         ask_order = {
             "ticker": self.ticker,
