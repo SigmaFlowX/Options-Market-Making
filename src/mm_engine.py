@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta
 from datetime import timezone
 import uuid
-from black_scholes import solve_black_scholes
+import math
 
 class BrokerClient:
     def __init__(self, token):
@@ -316,7 +316,7 @@ class BrokerClient:
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
-    async def force_update_orders_dict_status(self):
+    async def force_update_orders_dict_status(self):   #future possible improvement: parallel requests, not one by one
         for order_id in list(self.active_orders.keys()):
             try:
                 order_status = await self.get_order_status(id=order_id)
@@ -466,15 +466,16 @@ class MVPStrategy:
                     self.best_ask, self.best_bid = self.get_best_bid_and_asks_from_orderbook(data)
                 else:
                     self.inventory = data.get(self.ticker, 0)
+                    print(f"Current inventory: {self.inventory}")
 
             if self.inventory is None:
                 print("Inventory missing(")
                 continue
-            orders = self.generate_orders()
+            orders = self.generate_orders_simple()
             if orders:
                 await self.order_manager.submit_orders(orders)
 
-    def generate_orders(self):
+    def generate_orders_simple(self):
         if self.best_bid is None or self.best_ask is None:
             return None
 
@@ -533,8 +534,51 @@ class MVPStrategy:
             orders.append(bid_order)
         if ask_size > 0 and self.inventory > 0:
             orders.append(ask_order)
-        print(f"Current inventory: {self.inventory}")
         return orders if orders else None
+
+    def generate_orders_as(self, sigma, gamma, k, tau):
+        if self.best_bid is None or self.best_ask is None:
+            return None
+        q = self.inventory
+
+        s =  (self.best_bid + self.best_ask) / 2 #mid
+        r = s - q * gamma * sigma**2 * tau
+        delta = 1/gamma * math.log(1+ + gamma/k) + 1/2 * gamma * sigma**2 * tau
+
+        optimal_bid = round(r - delta, 2)
+        optimal_ask = round(r + delta, 2)
+
+        bid_size = round(self.order_size * max(0, 1 - q / self.inventory_limit))
+        ask_size = round(self.order_size * max(0, 1 + q / self.inventory_limit))
+
+        if ask_size > q: #cannot put sell orders larger than inventory
+            bid_size = q
+
+        ask_order = {
+            "ticker": self.ticker,
+            "class_code": self.class_code,
+            "side": '2',
+            "price": optimal_ask,
+            "quantity": ask_size
+        }
+
+        bid_order = {
+            "ticker": self.ticker,
+            "class_code": self.class_code,
+            "side": '1',
+            "price": optimal_bid,
+            "quantity": bid_size
+        }
+
+        orders = []
+        if bid_size > 0:
+            orders.append(bid_order)
+        if ask_size > 0:
+            orders.append(ask_order)
+        return orders if orders else None
+
+
+
 
     def get_best_bid_and_asks_from_orderbook(self, orderbook): #we have to exclude our own orders from orderbook to find real best bid and ask
         bids = orderbook.get("bids", [])
