@@ -471,7 +471,7 @@ class MVPStrategy:
             if self.inventory is None:
                 print("Inventory missing(")
                 continue
-            orders = self.generate_orders_simple()
+            orders = self.generate_orders_as(sigma=0.1, gamma=0.1, k=1.5, tau=1)
             if orders:
                 await self.order_manager.submit_orders(orders)
 
@@ -584,9 +584,6 @@ class MVPStrategy:
         if ask_size > 0:
             orders.append(ask_order)
         return orders if orders else None
-
-
-
 
     def get_best_bid_and_asks_from_orderbook(self, orderbook): #we have to exclude our own orders from orderbook to find real best bid and ask
         bids = orderbook.get("bids", [])
@@ -712,10 +709,10 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6B", "OPTSPOT",5, 15, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR300CC6B", "OPTSPOT",2, 8, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6B", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR300CC6B", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
