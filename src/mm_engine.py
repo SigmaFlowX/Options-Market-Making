@@ -142,7 +142,7 @@ class BrokerClient:
                 await asyncio.sleep(1)
 
     async def start_orders_ws(self):
-        url = "wss://ws.broker.ru/trade-api-bff-operations/api/v1/orders/execution/ws"
+        url = "wss://ws.broker.ru/trade-api-bff-operations/api/v1/orders/transaction/ws"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
         attempt = 0
@@ -709,7 +709,7 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR300CC6B", "OPTSPOT",2, 8, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6", "OPTSPOT",2, 8, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
     task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR300CC6B", class_code="OPTSPOT", depth=5))
@@ -717,6 +717,7 @@ async def main():
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
     task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
+
     await asyncio.gather(task0, task1, task2, task3, task4, task5)
     await client.close()
 
