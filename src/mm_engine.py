@@ -136,7 +136,7 @@ class BrokerClient:
         while True:
             try:
                 await self.get_inventory()
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
             except Exception as e:
                 print(f"Failed to update inventory \n {e}")
                 await asyncio.sleep(1)
@@ -156,11 +156,21 @@ class BrokerClient:
                         order_id = data['clientOrderId']
                         order_status = data['data']['orderStatus']
 
-                        if order_status in ['2', '4', '6', '8']:
-                            self.active_orders.pop(order_id, None)
-                        else:
-                            self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
-                            self.active_orders[order_id]['status'] = order_status
+                        if order_id in self.active_orders: #edited/cancelled/excecuted
+                            if order_status in ['2', '4', '6', '8']:
+                                self.active_orders.pop(order_id, None)
+                            else:
+                                self.active_orders[order_id]['quantity'] = data['data']['remainedQuantity']
+                                self.active_orders[order_id]['status'] = order_status
+                        else: #new order placed
+                            self.active_orders[order_id] = {
+                                "ticker": data['data']['ticker'],
+                                "class_code": data['data']['classCode'],
+                                "side": data['data']['side'],
+                                "price": data['data']['price'],
+                                "quantity": data['data']['remainedQuantity'],
+                                "status": '0'
+                            }
 
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -239,14 +249,14 @@ class BrokerClient:
                     client_order_id = data['clientOrderId']
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
                     print(data)
-                    self.active_orders[client_order_id] = {
-                        "ticker": ticker,
-                        "class_code": class_code,
-                        "side": side,
-                        "price": price,
-                        "quantity": quantity,
-                        "status": '0'
-                    }
+                    # self.active_orders[client_order_id] = {
+                    #     "ticker": ticker,
+                    #     "class_code": class_code,
+                    #     "side": side,
+                    #     "price": price,
+                    #     "quantity": quantity,
+                    #     "status": '0'
+                    # }
                     return client_order_id
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -280,7 +290,7 @@ class BrokerClient:
                         attempt += 1
                         continue
                     print(f"Canceled order {id}")
-                    self.active_orders.pop(id, None)
+                    # self.active_orders.pop(id, None)
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
@@ -367,15 +377,15 @@ class BrokerClient:
                         continue
 
                     side, ticker, class_code = self.active_orders[id]['side'], self.active_orders[id]['ticker'], self.active_orders[id]['class_code']
-                    self.active_orders.pop(id, None)
-                    self.active_orders[new_id] = {
-                        "ticker": ticker,
-                        "class_code": class_code,
-                        "side": side,
-                        "price": price,
-                        "quantity": quantity,
-                        "status": '0'
-                    }
+                    # self.active_orders.pop(id, None)
+                    # self.active_orders[new_id] = {
+                    #     "ticker": ticker,
+                    #     "class_code": class_code,
+                    #     "side": side,
+                    #     "price": price,
+                    #     "quantity": quantity,
+                    #     "status": '0'
+                    # }
                     print(f"edited order {id} with ticker {ticker} \n new price {price}, quantity = {quantity}")
                     return new_id
                     break
@@ -471,7 +481,8 @@ class MVPStrategy:
             if self.inventory is None:
                 print("Inventory missing(")
                 continue
-            orders = self.generate_orders_as(sigma=0.1, gamma=0.1, k=1.5, tau=1)
+            orders = self.generate_orders_simple()
+            #orders = self.generate_orders_as(sigma=0.1, gamma=0.1, k=1.5, tau=1)
             if orders:
                 await self.order_manager.submit_orders(orders)
 
@@ -646,6 +657,7 @@ class OrderManager:
         while True:
             desired_orders = await self.q_desired_orders.get()
             print(f"Desired orders: \n {desired_orders}")
+            print(f"Active orders \n {self.client.active_orders}")
 
             occupied_ids = []
             for desired_order in desired_orders:
@@ -701,7 +713,7 @@ class OrderManager:
                          continue
 
 
-            await asyncio.sleep(0.0)
+            await asyncio.sleep(1)
 
 async def main():
     token = os.getenv("BKS_TOKEN")
@@ -709,16 +721,16 @@ async def main():
     await client.start()
 
     order_manager = OrderManager(client=client)
-    strategy = MVPStrategy(client, order_manager, "SR310CC6", "OPTSPOT",2, 8, 0.0)
+    strategy = MVPStrategy(client, order_manager, "SR310CC6", "OPTSPOT",5, 10, 0.0)
 
     task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR300CC6B", class_code="OPTSPOT", depth=5))
+    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6", class_code="OPTSPOT", depth=5))
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
-    task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
+    #task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
 
-    await asyncio.gather(task0, task1, task2, task3, task4, task5)
+    await asyncio.gather(task0, task1, task2, task3, task4)
     await client.close()
 
 if __name__ == "__main__":
