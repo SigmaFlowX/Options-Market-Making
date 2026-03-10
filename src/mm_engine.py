@@ -152,7 +152,7 @@ class BrokerClient:
                     print("Connected orders ws")
                     async for ms in ws:
                         data = json.loads(ms.data)
-                        print(f"Orders ws message: \n {data}")
+                        #print(f"Orders ws message: \n {data}")
                         order_id = data['clientOrderId']
                         order_status = data['data']['orderStatus']
 
@@ -249,14 +249,14 @@ class BrokerClient:
                     client_order_id = data['clientOrderId']
                     print(f"Placed order for {ticker} at price {price} with quantity {quantity} and id {client_order_id}")
                     print(data)
-                    # self.active_orders[client_order_id] = {
-                    #     "ticker": ticker,
-                    #     "class_code": class_code,
-                    #     "side": side,
-                    #     "price": price,
-                    #     "quantity": quantity,
-                    #     "status": '0'
-                    # }
+                    self.active_orders[client_order_id] = {
+                        "ticker": ticker,
+                        "class_code": class_code,
+                        "side": side,
+                        "price": price,
+                        "quantity": quantity,
+                        "status": '0'
+                    }
                     return client_order_id
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -290,7 +290,7 @@ class BrokerClient:
                         attempt += 1
                         continue
                     print(f"Canceled order {id}")
-                    # self.active_orders.pop(id, None)
+                    self.active_orders.pop(id, None)
                     break
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 print(f"Failed attempt {attempt + 1} while canceling order: \n {e}")
@@ -377,15 +377,15 @@ class BrokerClient:
                         continue
 
                     side, ticker, class_code = self.active_orders[id]['side'], self.active_orders[id]['ticker'], self.active_orders[id]['class_code']
-                    # self.active_orders.pop(id, None)
-                    # self.active_orders[new_id] = {
-                    #     "ticker": ticker,
-                    #     "class_code": class_code,
-                    #     "side": side,
-                    #     "price": price,
-                    #     "quantity": quantity,
-                    #     "status": '0'
-                    # }
+                    self.active_orders.pop(id, None)
+                    self.active_orders[new_id] = {
+                        "ticker": ticker,
+                        "class_code": class_code,
+                        "side": side,
+                        "price": price,
+                        "quantity": quantity,
+                        "status": '0'
+                    }
                     print(f"edited order {id} with ticker {ticker} \n new price {price}, quantity = {quantity}")
                     return new_id
                     break
@@ -398,7 +398,7 @@ class BrokerClient:
         while True:
             print("updating orders...")
             await self.force_update_orders_dict_status()
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(10)
 
     async def get_current_price(self, ticker, class_code): # will be used to get spot price of the underlying asset to solve Black-Scholes equation
         url = "https://be.broker.ru/trade-api-market-data-connector/api/v1/candles-chart"
@@ -728,9 +728,9 @@ async def main():
     task2 = asyncio.create_task(client.start_inventory_refresher())
     task3 = asyncio.create_task(strategy.run())
     task4 = asyncio.create_task(order_manager.run())
-    #task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
+    task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
 
-    await asyncio.gather(task0, task1, task2, task3, task4)
+    await asyncio.gather(task0, task1, task2, task3, task4, task5)
     await client.close()
 
 if __name__ == "__main__":
