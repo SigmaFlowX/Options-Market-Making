@@ -53,8 +53,8 @@ async def save_orderbook_data(client, conn):
                     data["ticker"],
                     data["classCode"],
                     timestamp,
-                    data["bids"],
-                    data["asks"],
+                    json.dumps(data["bids"]),
+                    json.dumps(data["asks"]),
                     data["bidVolume"],
                     data["askVolume"]
                 )
