@@ -3,6 +3,7 @@ import os
 import json
 import asyncio
 import asyncpg
+from datetime import datetime
 
 
 TICKERS = [
@@ -34,6 +35,8 @@ async def save_orderbook_data(client, conn):
                 #     f.write("\n")
                 #
                 # print(f"Updated {ticker}")
+                timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00")
+                )
                 await conn.execute(
                     """
                     INSERT INTO orderbooks (
@@ -49,7 +52,7 @@ async def save_orderbook_data(client, conn):
                     """,
                     data["ticker"],
                     data["classCode"],
-                    data["dateTime"],
+                    timestamp,
                     data["bids"],
                     data["asks"],
                     data["bidVolume"],
