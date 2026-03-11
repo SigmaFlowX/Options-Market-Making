@@ -27,6 +27,13 @@ async def save_orderbook_data(client, conn):
         try:
             data = await client.q_orderbooks.get()
             if data['responseType'] == "OrderBook":
+                # ticker = data['ticker']
+                # output_file = os.path.join(DATA_DIR, f"{ticker}.jsonl")
+                # with open(output_file, "a") as f:
+                #     json.dump(data, f)
+                #     f.write("\n")
+                #
+                # print(f"Updated {ticker}")
                 await conn.execute(
                     """
                     INSERT INTO orderbooks (
