@@ -5,7 +5,8 @@ import asyncio
 
 
 TICKERS = [
-    ("SR320CC6", "OPTSPOT")
+    ("SR320CC6", "OPTSPOT"),
+    ("SR310CC6", "OPTSPOT")
 ]
 DEPTH = 5
 
