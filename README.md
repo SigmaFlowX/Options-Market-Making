@@ -14,6 +14,8 @@ All the main work is in src/MM_engine.py
 1) Most of the necessary broker interactions such as placing orders, editing them, cancelling, updating inventory, opening websockets and so on.
 2) Simplest MM strategy that generates ask and bid orders based on market data.
 3) OrderManager that compares desired orders from the strategy and current live orders and makes adjustments.
+4) A script to collect live orderbook data and write it to postgres database (deployed to Railway).
+5) As a side work: evaluating greeks and fair price using Black-Scholes model.
 
 It can already trade live and right now I am actively testing key components. 
 
@@ -21,4 +23,4 @@ It can already trade live and right now I am actively testing key components.
 
 1) Cancelling redundant orders and overall having some kind of database would be great. (+)
 2) Active delta hedging with underlying asset or a futures.
-3) Improving the strategy itself.
+3) Improving the strategy itself. 
