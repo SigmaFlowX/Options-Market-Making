@@ -19,20 +19,20 @@ DEPTH = 5
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
-async def refresh_client(client):
+async def refresh_client(client, lock):
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
         while True:
             try:
-                await client.close()
-                await client.start()
-                print("client refreshed")
+                async with lock:
+                    await client.close()
+                    await client.start()
+                print("Client refreshed")
                 break
+
             except Exception as e:
-                print(f"Exception {e}")
+                print(f"Exception during refresh: {e}")
                 await asyncio.sleep(10)
-
-
 
 async def connect_db():
     conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
@@ -83,24 +83,28 @@ async def main():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
 
+    client_lock = asyncio.Lock()
+
     conn = await connect_db()
 
     while True:
         try:
-            await client.start()
+            async with client_lock:
+                await client.start()
             break
         except Exception as e:
             print(f"Exception while starting a client {e}")
             await asyncio.sleep(10)
 
     save_task = asyncio.create_task(save_orderbook_data(client, conn))
-    refresh_task = asyncio.create_task(refresh_client(client))
+    refresh_task = asyncio.create_task(refresh_client(client, client_lock))
+
     ws_tasks = []
     for ticker, class_code in TICKERS:
         ws_tasks.append(asyncio.create_task(client.start_order_book_ws(ticker, DEPTH, class_code)))
 
     try:
-        await asyncio.gather(save_task, *ws_tasks, refresh_task)
+        await asyncio.gather(save_task, refresh_task, *ws_tasks)
     finally:
         await client.close()
 
