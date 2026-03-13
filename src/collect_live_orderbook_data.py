@@ -5,7 +5,7 @@ import asyncio
 import asyncpg
 from datetime import datetime
 
-RESTART_TIME = 30
+RESTART_TIME = 7200
 TICKERS = [
     ("SR320CC6", "OPTSPOT"),
     ("SR310CC6", "OPTSPOT"),
@@ -92,8 +92,10 @@ async def run():
 async def main():
     while True:
         try:
+            print("Started")
             await run()
             await asyncio.sleep(RESTART_TIME)
+
         except Exception as e:
             print(f"Exception in main loop {e}")
             await asyncio.sleep(10)
