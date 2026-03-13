@@ -5,7 +5,7 @@ import asyncio
 import asyncpg
 from datetime import datetime
 
-
+RESTART_TIME = 7200
 TICKERS = [
     ("SR320CC6", "OPTSPOT"),
     ("SR310CC6", "OPTSPOT"),
@@ -18,21 +18,6 @@ DEPTH = 5
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-
-async def refresh_client(client, lock):
-    while True:
-        await asyncio.sleep(10)
-        while True:
-            try:
-                async with lock:
-                    await client.close()
-                    await client.start()
-                print("Client refreshed")
-                break
-
-            except Exception as e:
-                print(f"Exception during refresh: {e}")
-                await asyncio.sleep(10)
 
 async def connect_db():
     conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
@@ -79,35 +64,39 @@ async def save_orderbook_data(client, conn):
             print(f"Error while saving: {e}")
             await asyncio.sleep(10)
 
-async def main():
+async def run():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
-
-    client_lock = asyncio.Lock()
 
     conn = await connect_db()
 
     while True:
         try:
-            async with client_lock:
-                await client.start()
+            await client.start()
             break
         except Exception as e:
             print(f"Exception while starting a client {e}")
             await asyncio.sleep(10)
 
     save_task = asyncio.create_task(save_orderbook_data(client, conn))
-    refresh_task = asyncio.create_task(refresh_client(client, client_lock))
 
     ws_tasks = []
     for ticker, class_code in TICKERS:
         ws_tasks.append(asyncio.create_task(client.start_order_book_ws(ticker, DEPTH, class_code)))
 
     try:
-        await asyncio.gather(save_task, refresh_task, *ws_tasks)
+        await asyncio.gather(save_task, *ws_tasks)
     finally:
         await client.close()
 
+async def main():
+    while True:
+        try:
+            await run()
+            await asyncio.sleep(RESTART_TIME)
+        except Exception as e:
+            print(f"Exception in main loop {e}")
+            await asyncio.sleep(10)
 
 if __name__ == "__main__":
     asyncio.run(main())
