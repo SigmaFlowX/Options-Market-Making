@@ -5,7 +5,7 @@ import asyncio
 import asyncpg
 from datetime import datetime
 
-RESTART_TIME = 7200
+RESTART_TIME = 30
 TICKERS = [
     ("SR320CC6", "OPTSPOT"),
     ("SR310CC6", "OPTSPOT"),
