@@ -20,8 +20,8 @@ DEPTH = 5
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 async def refresh_client(client):
-    await asyncio.sleep(60)
     while True:
+        await asyncio.sleep(60)
         while True:
             try:
                 await client.close()
