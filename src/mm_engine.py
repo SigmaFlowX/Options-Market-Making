@@ -94,7 +94,7 @@ class BrokerClient:
                             break
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                print(f"Failed attempt {attempt + 1} while opening order book websocket: \n {e}")
+                print(f"Failed attempt {attempt + 1} while opening order book websocket for {ticker}: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
