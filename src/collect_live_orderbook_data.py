@@ -7,24 +7,24 @@ from datetime import datetime
 
 RESTART_TIME = 7200
 TICKERS = [
-    ("SR320CC6", "OPTSPOT"),
-    ("SR310CC6", "OPTSPOT"),
-    ("SR300CC6", "OPTSPOT"),
-    ("SR320C06", "OPTSPOT"),
-    ("SR310C06", "OPTSPOT"),
-    ("SR300C06", "OPTSPOT"),
-    ("SR300CC6D", "OPTSPOT"),
+    ("SR320CC6D", "OPTSPOT"),
     ("SR310CC6D", "OPTSPOT"),
     ("SR300CC6D", "OPTSPOT"),
-    ("SR320C06D", "OPTSPOT"),
-    ("SR310C06D", "OPTSPOT"),
-    ("SR300C06D", "OPTSPOT"),
+    ("SR320CO6D", "OPTSPOT"),
+    ("SR310CO6D", "OPTSPOT"),
+    ("SR300CO6D", "OPTSPOT"),
     ("SR320CD6A", "OPTSPOT"),
     ("SR310CD6A", "OPTSPOT"),
     ("SR300CD6A", "OPTSPOT"),
     ("SR320CP6A", "OPTSPOT"),
     ("SR310CP6A", "OPTSPOT"),
     ("SR300CP6A", "OPTSPOT"),
+    ("SR320CD6", "OPTSPOT"),
+    ("SR310CD6", "OPTSPOT"),
+    ("SR300CD6", "OPTSPOT"),
+    ("SR320CP6", "OPTSPOT"),
+    ("SR310CP6", "OPTSPOT"),
+    ("SR300CP6", "OPTSPOT"),
 ]
 DEPTH = 5
 
