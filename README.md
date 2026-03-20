@@ -16,6 +16,7 @@ All the main work is in src/MM_engine.py
 3) OrderManager that compares desired orders from the strategy and current live orders and makes adjustments.
 4) A script to collect live orderbook data and write it to postgres database (deployed to Railway).
 5) As a side work: evaluating greeks and fair price using Black-Scholes model.
+6) I also gathered some live orderbook data what I will analyse and may use it to optimize model parameters
 
 It can already trade live and right now I am actively testing key components. 
 
