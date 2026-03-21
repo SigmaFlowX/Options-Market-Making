@@ -1,7 +1,6 @@
 import pandas as pd
 
 def generate_orders_simple(mid, best_bid, best_ask, inventory, inventory_k, order_size, inventory_limit):
-
     half_spread = abs((best_ask - best_bid)) / 2
 
     inventory_shift = inventory_k * inventory
@@ -52,5 +51,27 @@ def generate_orders_simple(mid, best_bid, best_ask, inventory, inventory_k, orde
         orders['bid'] = bid_order
     return orders if orders else None
 
-def run_backtest(df):
-    pass
+def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, mid, best_ask, best_bid):
+    best_ask_arr = df['best_ask'].values
+    best_bid_arr = df['best_bid'].values
+    mid_arr = df['mid'].values
+
+    inventory = 0
+    curr_orders = {}
+
+    for i in range(len(mid_arr)):
+        best_ask = best_ask_arr[i]
+        best_bid = best_bid_arr[i]
+        mid = mid_arr[i]
+
+        if curr_orders:
+            if "bid" in curr_orders:
+                if curr_orders["bid"]["price"] >= best_bid:
+                    inventory += curr_orders["bid"]["quantity"]
+            if "ask" in curr_orders:
+                if curr_orders["ask"]["price"] <= best_ask:
+                    inventory -= curr_orders["ask"]["quantity"]
+
+
+
+
