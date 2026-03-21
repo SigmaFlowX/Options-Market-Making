@@ -57,7 +57,11 @@ def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, 
     mid_arr = df['mid'].values
 
     inventory = 0
+    cash = 0
     curr_orders = {}
+    inventory_series = []
+    cash_series = []
+    pnl_series = []
 
     for i in range(len(mid_arr)):
         best_ask = best_ask_arr[i]
@@ -68,10 +72,29 @@ def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, 
             if "bid" in curr_orders:
                 if curr_orders["bid"]["price"] >= best_bid:
                     inventory += curr_orders["bid"]["quantity"]
+                    cash -= curr_orders["bid"]["price"] * curr_orders["bid"]["quantity"]
+                    curr_orders.pop("bid")
             if "ask" in curr_orders:
                 if curr_orders["ask"]["price"] <= best_ask:
                     inventory -= curr_orders["ask"]["quantity"]
+                    cash += curr_orders["ask"]["price"] * curr_orders["ask"]["quantity"]
+                    curr_orders.pop("ask")
 
+        desired_orders = generate_orders_simple(mid, best_bid, best_ask, inventory, inventory_k, order_size, inventory_limit)
+        if desired_orders:
+            if "bid" in desired_orders:
+                curr_orders["bid"] = desired_orders["bid"]
+            if "ask" in desired_orders:
+                curr_orders["ask"] = desired_orders["ask"]
 
+        inventory_series.append(inventory)
+        cash_series.append(cash)
+        pnl_series.append(cash + inventory * mid)
+
+    return {
+        "pnl_series": pnl_series,
+        "cash_series": cash_series,
+        "inventory_series": inventory_series
+    }
 
 
