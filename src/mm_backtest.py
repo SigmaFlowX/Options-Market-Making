@@ -61,7 +61,7 @@ def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, 
     curr_orders = {}
     inventory_series = []
     cash_series = []
-    pnl_series = []
+    equity_series = []
 
     for i in range(len(mid_arr)):
         best_ask = best_ask_arr[i]
@@ -89,10 +89,10 @@ def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, 
 
         inventory_series.append(inventory)
         cash_series.append(cash)
-        pnl_series.append(cash + inventory * mid)
+        equity_series.append(cash + inventory * mid)
 
     return {
-        "pnl_series": pnl_series,
+        "pnl_series": equity_series,
         "cash_series": cash_series,
         "inventory_series": inventory_series
     }
