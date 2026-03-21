@@ -46,15 +46,15 @@ def generate_orders_simple(mid, best_bid, best_ask, inventory, inventory_k, orde
 
     orders = {}
     if bid_size > 0 and inventory < inventory_limit:
-        orders['ask'] = ask_order
-    if ask_size > 0 and inventory > 0:
         orders['bid'] = bid_order
+    if ask_size > 0 and inventory > 0:
+        orders['ask'] = ask_order
     return orders if orders else None
 
 def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, mid, best_ask, best_bid):
     best_ask_arr = df['best_ask'].values
     best_bid_arr = df['best_bid'].values
-    mid_arr = df['mid'].values
+    mid_arr = df['mid_price'].values
 
     inventory = 0
     cash = 0
