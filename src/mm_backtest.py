@@ -31,7 +31,7 @@ def generate_orders_simple(mid, best_bid, best_ask, inventory, inventory_k, orde
         ask_size = 0
     if inventory >= inventory_limit:
         bid_size = 0
-    elif inventory <= inventory_limit:
+    elif inventory <= -inventory_limit:
         ask_size = 0
 
     ask_order = {
