@@ -92,7 +92,7 @@ def run_backtest(df, inventory_k, order_size, inventory_limit): #df: timestamp, 
         equity_series.append(cash + inventory * mid)
 
     return {
-        "pnl_series": equity_series,
+        "equity_series": equity_series,
         "cash_series": cash_series,
         "inventory_series": inventory_series
     }
