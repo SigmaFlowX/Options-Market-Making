@@ -16,6 +16,7 @@ class BrokerClient:
 
         self.q_inventory = asyncio.Queue()
         self.q_orderbooks = asyncio.Queue()
+        self.q_orderflow = asyncio.Queue()
 
     async def start(self):
         self.session = aiohttp.ClientSession()
@@ -97,6 +98,42 @@ class BrokerClient:
                 print(f"Failed attempt {attempt + 1} while opening order book websocket for {ticker}: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
+
+    async def start_orderflow_ws(self, instruments):
+        url = "wss://ws.broker.ru/trade-api-market-data-connector/api/v1/market-data/ws"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+
+        attempt = 0
+        while True:
+            try:
+                async with self.session.ws_connect(url, headers=headers) as ws:
+                    subscribe_message = {
+                        "subscribeType": 0,
+                        "dataType": 2,
+                        "instruments": instruments
+                    }
+                    await ws.send_json(subscribe_message)
+                    print(f"connected ws for {instruments}")
+                    async for msg in ws:
+                        if msg.type == aiohttp.WSMsgType.TEXT:
+                            try:
+                                data = json.loads(msg.data)
+                            except Exception as e:
+                                print("Invalid json")
+                                continue
+                            await self.q_orderflow.put(data)
+                        elif msg.type == aiohttp.WSMsgType.ERROR:
+                            print(f"Websocket message error: \n {ws.exception()}")
+                            break
+                        elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSING):
+                            print("Websocket closed by server")
+                            break
+
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Failed attempt {attempt + 1} while opening order flow websocket for {instruments}: \n {e}")
+                await asyncio.sleep(min(3 + 2 * attempt, 60))
+                attempt += 1
+
 
     async def get_inventory(self):
         url = "https://be.broker.ru/trade-api-bff-portfolio/api/v1/portfolio"
