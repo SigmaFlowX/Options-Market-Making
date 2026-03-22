@@ -58,7 +58,7 @@ class BrokerClient:
 
         raise Exception("Failed to authorize with 4 attempts")
 
-    async def start_order_book_ws(self, ticker, depth, class_code):
+    async def start_order_book_ws(self, instruments, depth):
         url = "wss://ws.broker.ru/trade-api-market-data-connector/api/v1/market-data/ws"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
@@ -70,12 +70,7 @@ class BrokerClient:
                         "subscribeType": 0,
                         "dataType": 0,
                         "depth": depth,
-                        "instruments": [
-                            {
-                                "classCode": class_code,
-                                "ticker": ticker
-                            }
-                        ]
+                        "instruments": instruments
                     }
                     await ws.send_json(subscribe_message)
                     print(f"connected ws for {ticker}")
