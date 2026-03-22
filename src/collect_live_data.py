@@ -33,8 +33,8 @@ INSTRUMENTS = [
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 async def connect_db():
-    order_book_conn = await asyncpg.connect(os.getenv("ORDER_FLOW_DATABASE_URL"))
-    order_flow_conn = await asyncpg.connect(os.getenv("ORDER_BOOK_DATABASE_URL"))
+    order_flow_conn = await asyncpg.connect(os.getenv("ORDER_FLOW_DATABASE_URL"))
+    order_book_conn = await asyncpg.connect(os.getenv("ORDER_BOOK_DATABASE_URL"))
     return order_book_conn, order_flow_conn
 
 async def save_data(client, order_book_conn, order_flow_conn):
