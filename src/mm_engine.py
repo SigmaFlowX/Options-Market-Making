@@ -113,7 +113,7 @@ class BrokerClient:
                         "instruments": instruments
                     }
                     await ws.send_json(subscribe_message)
-                    print(f"connected ws for {instruments}")
+                    print(f"connected orderflow for {instruments}")
                     async for msg in ws:
                         if msg.type == aiohttp.WSMsgType.TEXT:
                             try:
@@ -122,6 +122,7 @@ class BrokerClient:
                                 print("Invalid json")
                                 continue
                             await self.q_orderflow.put(data)
+
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             print(f"Websocket message error: \n {ws.exception()}")
                             break
@@ -759,15 +760,15 @@ async def main():
 
     order_manager = OrderManager(client=client)
     strategy = MVPStrategy(client, order_manager, "SR310CC6", "OPTSPOT",5, 10, 0.0)
-
-    task0 = asyncio.create_task(client.start_orders_ws())
-    task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6", class_code="OPTSPOT", depth=5))
-    task2 = asyncio.create_task(client.start_inventory_refresher())
-    task3 = asyncio.create_task(strategy.run())
-    task4 = asyncio.create_task(order_manager.run())
-    task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
-
-    await asyncio.gather(task0, task1, task2, task3, task4, task5)
+    task = asyncio.create_task(client.start_orderflow_ws(instruments=[{"ticker": "SBER", "classCode": "TQBR"}]))
+    # task0 = asyncio.create_task(client.start_orders_ws())
+    # task1 = asyncio.create_task(client.start_order_book_ws(ticker="SR310CC6", class_code="OPTSPOT", depth=5))
+    # task2 = asyncio.create_task(client.start_inventory_refresher())
+    # task3 = asyncio.create_task(strategy.run())
+    # task4 = asyncio.create_task(order_manager.run())
+    # task5 = asyncio.create_task(client.start_forced_orders_dict_refresher())
+    #
+    await asyncio.gather(task)
     await client.close()
 
 if __name__ == "__main__":
