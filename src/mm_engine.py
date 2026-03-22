@@ -73,7 +73,7 @@ class BrokerClient:
                         "instruments": instruments
                     }
                     await ws.send_json(subscribe_message)
-                    print(f"connected ws for {ticker}")
+                    print(f"connected ws for {instruments}")
                     async for msg in ws:
                         if msg.type == aiohttp.WSMsgType.TEXT:
                             try:
@@ -90,7 +90,7 @@ class BrokerClient:
                             break
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                print(f"Failed attempt {attempt + 1} while opening order book websocket for {ticker}: \n {e}")
+                print(f"Failed attempt {attempt + 1} while opening order book websocket for {instruments}: \n {e}")
                 await asyncio.sleep(min(3 + 2 * attempt, 60))
                 attempt += 1
 
