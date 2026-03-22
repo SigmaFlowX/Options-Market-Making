@@ -115,7 +115,7 @@ async def run():
             print(f"Exception while starting a client {e}")
             await asyncio.sleep(10)
 
-    save_task = asyncio.create_task(save_data(client, ))
+    save_task = asyncio.create_task(save_data(client, order_book_conn, order_flow_conn))
 
     order_flow_task = asyncio.create_task(client.start_orderflow_ws(instruments=INSTRUMENTS))
     order_book_task = asyncio.create_task(client.start_order_book_ws(instruments=INSTRUMENTS, depth=DEPTH))
