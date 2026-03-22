@@ -37,38 +37,14 @@ async def connect_db():
     order_book_conn = await asyncpg.connect(os.getenv("ORDER_BOOK_DATABASE_URL"))
     return order_book_conn, order_flow_conn
 
-async def save_data(client, order_book_conn, order_flow_conn):
+
+async def save_orderbook(q_orderbooks, order_book_conn):
+
     while True:
         try:
-            data = await client.q_q_orderflow.get()
-            if data['responseType'] == "LastTrades":
-                timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
+            data = await q_orderbooks.get()
 
-                await order_flow_conn.execute(
-                    """
-                    INSERT INTO orders (
-                        ticker,
-                        class_code,
-                        timestamp,
-                        side,
-                        volume,
-                        price,
-                        quantity
-                    )
-                    VALUES ($1,$2,$3,$4,$5,$6,$7)
-                    """,
-                    data["ticker"],
-                    data["classCode"],
-                    timestamp,
-                    data['side'],
-                    data['volume'],
-                    data["price"],
-                    data["quantity"]
-                )
-
-                print(f"Updated orderflow{data['ticker']}")
-
-            elif data['responseType'] == "OrderBook":
+            if data['responseType'] == "OrderBook":
 
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
 
@@ -96,6 +72,41 @@ async def save_data(client, order_book_conn, order_flow_conn):
 
                 print(f"Updated order book {data['ticker']}")
 
+        except Exception as e:
+            print(f"Error while saving: {e}")
+            await asyncio.sleep(10)
+
+async def save_orderflow(q_orderflow, order_flow_conn):
+    while True:
+        try:
+            data = await q_orderflow.get()
+            if data['responseType'] == "LastTrades":
+                timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
+
+                await order_flow_conn.execute(
+                    """
+                    INSERT INTO orders (
+                        ticker,
+                        class_code,
+                        timestamp,
+                        side,
+                        volume,
+                        price,
+                        quantity
+                    )
+                    VALUES ($1,$2,$3,$4,$5,$6,$7)
+                    """,
+                    data["ticker"],
+                    data["classCode"],
+                    timestamp,
+                    data['side'],
+                    data['volume'],
+                    data["price"],
+                    data["quantity"]
+                )
+
+                print(f"Updated orderflow{data['ticker']}")
+
 
         except Exception as e:
             print(f"Error while saving: {e}")
@@ -115,13 +126,20 @@ async def run():
             print(f"Exception while starting a client {e}")
             await asyncio.sleep(10)
 
-    save_task = asyncio.create_task(save_data(client, order_book_conn, order_flow_conn))
+    save_orderflow_task = asyncio.create_task(save_orderflow(client.q_orderflow, order_flow_conn))
+    save_orderbook_task = asyncio.create_task(save_orderbook(client.q_orderbooks, order_book_conn))
 
     order_flow_task = asyncio.create_task(client.start_orderflow_ws(instruments=INSTRUMENTS))
     order_book_task = asyncio.create_task(client.start_order_book_ws(instruments=INSTRUMENTS, depth=DEPTH))
 
     try:
-        await asyncio.gather(save_task, order_flow_task, order_book_task)
+        await asyncio.gather(
+            save_orderflow_task,
+            save_orderbook_task,
+            order_flow_task,
+            order_book_task
+        )
+
     finally:
         await client.close()
 
