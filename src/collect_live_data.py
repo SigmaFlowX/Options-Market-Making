@@ -31,12 +31,11 @@ while strike < max_strike:
 
 
 async def connect_db():
-    order_flow_conn = await asyncpg.connect(os.getenv("ORDER_FLOW_DATABASE_URL"))
-    order_book_conn = await asyncpg.connect(os.getenv("ORDER_BOOK_DATABASE_URL"))
-    return order_book_conn, order_flow_conn
+    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
+    return conn
 
 
-async def save_orderbook(q_orderbooks, order_book_conn):
+async def save_orderbook(q_orderbooks, conn):
 
     while True:
         try:
@@ -45,7 +44,7 @@ async def save_orderbook(q_orderbooks, order_book_conn):
 
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
 
-                await order_book_conn.execute(
+                await conn.execute(
                     """
                     INSERT INTO orderbooks (
                         ticker,
@@ -73,14 +72,14 @@ async def save_orderbook(q_orderbooks, order_book_conn):
             print(f"Error while saving: orderbook {e}")
             await asyncio.sleep(10)
 
-async def save_orderflow(q_orderflow, order_flow_conn):
+async def save_orderflow(q_orderflow, conn):
     while True:
         try:
             data = await q_orderflow.get()
             if data['responseType'] == "LastTrades":
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
 
-                await order_flow_conn.execute(
+                await conn.execute(
                     """
                     INSERT INTO orders (
                         ticker,
@@ -113,7 +112,7 @@ async def run():
     token = os.getenv("BKS_TOKEN")
     client = BrokerClient(token)
 
-    order_book_conn, order_flow_conn = await connect_db()
+    conn = await connect_db()
 
     while True:
         try:
@@ -123,8 +122,8 @@ async def run():
             print(f"Exception while starting a client {e}")
             await asyncio.sleep(10)
 
-    save_orderflow_task = asyncio.create_task(save_orderflow(client.q_orderflow, order_flow_conn))
-    save_orderbook_task = asyncio.create_task(save_orderbook(client.q_orderbooks, order_book_conn))
+    save_orderflow_task = asyncio.create_task(save_orderflow(client.q_orderflow, conn))
+    save_orderbook_task = asyncio.create_task(save_orderbook(client.q_orderbooks, conn))
 
     order_flow_task = asyncio.create_task(client.start_orderflow_ws(instruments=INSTRUMENTS))
     order_book_task = asyncio.create_task(client.start_order_book_ws(instruments=INSTRUMENTS, depth=DEPTH))
