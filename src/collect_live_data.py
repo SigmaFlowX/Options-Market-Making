@@ -1,5 +1,3 @@
-from QuantLib import Instrument
-
 from mm_engine import BrokerClient
 import os
 import json
@@ -7,9 +5,9 @@ import asyncio
 import asyncpg
 from datetime import datetime
 
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 RESTART_TIME = 7200
 DEPTH = 5
-
 postfix_list = [
     "CC6D",
     "C06D",
@@ -31,7 +29,6 @@ while strike < max_strike:
         INSTRUMENTS.append({"ticker": option_ticker, "class_code": "OPTSPOT"})
     strike += strike_step
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 async def connect_db():
     order_flow_conn = await asyncpg.connect(os.getenv("ORDER_FLOW_DATABASE_URL"))
