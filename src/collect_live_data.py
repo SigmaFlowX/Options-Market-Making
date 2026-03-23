@@ -26,7 +26,7 @@ INSTRUMENTS = []
 while strike < max_strike:
     for postfix in postfix_list:
         option_ticker = ticker + str(strike) + postfix
-        INSTRUMENTS.append({"ticker": option_ticker, "class_code": "OPTSPOT"})
+        INSTRUMENTS.append({"ticker": option_ticker, "classCode": "OPTSPOT"})
     strike += strike_step
 
 
@@ -41,8 +41,6 @@ async def save_orderbook(q_orderbooks, order_book_conn):
     while True:
         try:
             data = await q_orderbooks.get()
-            print(f"Received orderbook data {data}")
-
             if data['responseType'] == "OrderBook":
 
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
@@ -79,7 +77,6 @@ async def save_orderflow(q_orderflow, order_flow_conn):
     while True:
         try:
             data = await q_orderflow.get()
-            print(f"Received orderflow data {data}")
             if data['responseType'] == "LastTrades":
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
 
