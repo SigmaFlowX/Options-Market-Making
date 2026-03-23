@@ -41,6 +41,7 @@ async def save_orderbook(q_orderbooks, order_book_conn):
     while True:
         try:
             data = await q_orderbooks.get()
+            print(f"Received orderbook data {data}")
 
             if data['responseType'] == "OrderBook":
 
@@ -78,6 +79,7 @@ async def save_orderflow(q_orderflow, order_flow_conn):
     while True:
         try:
             data = await q_orderflow.get()
+            print(f"Received orderflow data {data}")
             if data['responseType'] == "LastTrades":
                 timestamp = datetime.fromisoformat(data["dateTime"].replace("Z", "+00:00"))
 
