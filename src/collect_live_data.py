@@ -71,7 +71,7 @@ async def save_orderbook(q_orderbooks, order_book_conn):
                 print(f"Updated order book {data['ticker']}")
 
         except Exception as e:
-            print(f"Error while saving: {e}")
+            print(f"Error while saving: orderbook {e}")
             await asyncio.sleep(10)
 
 async def save_orderflow(q_orderflow, order_flow_conn):
@@ -107,7 +107,7 @@ async def save_orderflow(q_orderflow, order_flow_conn):
 
 
         except Exception as e:
-            print(f"Error while saving: {e}")
+            print(f"Error while saving orderflow: {e}")
             await asyncio.sleep(10)
 
 async def run():
