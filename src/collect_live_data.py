@@ -1,3 +1,5 @@
+from QuantLib import Instrument
+
 from mm_engine import BrokerClient
 import os
 import json
@@ -7,28 +9,27 @@ from datetime import datetime
 
 RESTART_TIME = 7200
 DEPTH = 5
-INSTRUMENTS = [
-    {"ticker": "SR320CC6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CC6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CC6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR320CO6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CO6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CO6D", "classCode": "OPTSPOT"},
-    {"ticker": "SR320CD6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CD6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CD6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR320CP6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CP6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CP6A", "classCode": "OPTSPOT"},
-    {"ticker": "SR320CD6", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CD6", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CD6", "classCode": "OPTSPOT"},
-    {"ticker": "SR320CP6", "classCode": "OPTSPOT"},
-    {"ticker": "SR310CP6", "classCode": "OPTSPOT"},
-    {"ticker": "SR300CP6", "classCode": "OPTSPOT"},
 
+postfix_list = [
+    "CC6D",
+    "C06D",
+    "CD6A",
+    "CP6A",
+    "CD6",
+    "CP6"
 ]
+ticker = "SR"
+min_strike = 270
+max_strike = 370
+strike_step = 10
 
+strike = min_strike
+INSTRUMENTS = []
+while strike < max_strike:
+    for postfix in postfix_list:
+        option_ticker = ticker + str(strike) + postfix
+        INSTRUMENTS.append({"ticker": option_ticker, "class_code": "OPTSPOT"})
+    strike += strike_step
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
