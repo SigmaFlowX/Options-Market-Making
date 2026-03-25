@@ -1,6 +1,6 @@
 ## disclaimer
 This project is purely for educational purposes and I personally do not exepct it to be profitable for 2 key reasons: <br>
-1) I don't have market maker fees on the exchange
+1) I don't have market maker fees on the exchange (In fact my fee rate is as high as 2%)
 2) I am not hunting super low latencies with my code but that is aboslutely necessary for market making
 
 Options market is chosen beacuse of its high spreads and low liquidity thanks to which I won't burn a ton of moeny in fees while testing and can really not care about latency. 
@@ -23,5 +23,11 @@ It can already trade live and right now I am actively testing key components.
 ## What is left to do 
 
 1) Cancelling redundant orders and overall having some kind of database would be great. (+)
-2) Active delta hedging with underlying asset or a futures.
-3) Improving the strategy itself. 
+2) Active delta hedging with underlying asset or a future.
+3) Improving the strategy itself.
+4) Backtesting using historical data
+
+## What I am going right now 
+(25/03/25) After building basics of broker interaction and a simple mm strategy, I reailized how badly I am lacking some historical orderbbok and orderflow data. 
+There is no publicly available data of this sort, so I have to collect it myself. 
+Therefore, I have deployed live data scrapper on Railway and currently waiting for couple of weeks to accumulate enough data for some analysis and backtests.
