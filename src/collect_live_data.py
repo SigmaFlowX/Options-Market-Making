@@ -14,7 +14,12 @@ postfix_list = [
     "CD6A",
     "CP6A",
     "CD6",
-    "CP6"
+    "CP6",
+    "CD6A",
+    "CP6A",
+    "CD6B",
+    "CP6B"
+
 ]
 ticker = "SR"
 min_strike = 270
