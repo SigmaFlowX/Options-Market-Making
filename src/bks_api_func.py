@@ -97,6 +97,50 @@ def get_option_data_by_ticker(token, stock_ticker, option_ticker, sleep_time=5, 
 
     return info
 
+def find_option_ticker_by_expiry_date(token, stock_ticker, date, sleep_time=5, size=100):
+    url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
+
+    session = requests.Session()
+    session.headers.update({
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}"
+    })
+
+    page = 0
+    results = []
+    while True:
+        params = {
+            "type": "OPTIONS",
+            "baseAssetTicker": stock_ticker,
+            "size": size,
+            "page": page
+        }
+
+        response = session.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+        if not data:
+            break
+
+        results.extend(data)
+        page += 1
+        print(page, end=' ')
+        time.sleep(sleep_time)
+    print("")
+
+    df = pd.DataFrame(results)
+
+    if isinstance(date, datetime):
+        target_date = date.strftime("%Y%m%d")
+
+    filtered = df[df["maturityDate"] == date]
+
+    if filtered.empty:
+        return []
+
+    return filtered["ticker"].tolist()
+
 def get_token_from_txt_file():
     file = open(TOKEN_FILE)
     token = file.read()
@@ -391,9 +435,15 @@ def price_option_using_bs(token, spot_ticker, option_ticker):
 
 if __name__ == "__main__":
     access_token = authorize(get_token_from_txt_file())
-    print(access_token)
 
-    print(get_option_data_by_ticker(access_token, "SBER", "SR300CC6D", sleep_time=0.5))
+    tickers = find_option_ticker_by_expiry_date(
+        token=access_token,
+        stock_ticker="SBER",
+        date="20250325",
+        sleep_time=0.5
+    )
+
+    print(tickers)
 
 
 
