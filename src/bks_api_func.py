@@ -434,8 +434,8 @@ if __name__ == "__main__":
     tickers = find_option_ticker_by_expiry_date(
         token=access_token,
         stock_ticker="SBER",
-        start_date="20260327",
-        end_date = "20260407",
+        start_date="20260402",
+        end_date = "20260411",
         sleep_time=1
     )
 
