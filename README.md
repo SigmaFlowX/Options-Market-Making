@@ -1,4 +1,4 @@
-## disclaimer
+## Disclaimer
 This project is purely for educational purposes and I personally do not exepct it to be profitable for 2 key reasons: <br>
 1) I don't have market maker fees on the exchange (In fact my fee rate is as high as 2%)
 2) I am not hunting super low latencies with my code but that is aboslutely necessary for market making
