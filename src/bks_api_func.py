@@ -97,7 +97,7 @@ def get_option_data_by_ticker(token, stock_ticker, option_ticker, sleep_time=5, 
 
     return info
 
-def find_option_ticker_by_expiry_date(token, stock_ticker, date, sleep_time=5, size=100):
+def find_option_ticker_by_expiry_date(token, stock_ticker, start_date, end_date,  sleep_time=5, size=100):
     url = "https://be.broker.ru/trade-api-information-service/api/v1/instruments/by-type"
 
     session = requests.Session()
@@ -131,15 +131,10 @@ def find_option_ticker_by_expiry_date(token, stock_ticker, date, sleep_time=5, s
 
     df = pd.DataFrame(results)
 
-    if isinstance(date, datetime):
-        target_date = date.strftime("%Y%m%d")
-
-    filtered = df[df["maturityDate"] == date]
-
-    if filtered.empty:
-        return []
-
-    return filtered["ticker"].tolist()
+    return df.loc[
+        df["maturityDate"].between(start_date, end_date),
+        ["ticker", "maturityDate"]
+    ].drop_duplicates()
 
 def get_token_from_txt_file():
     file = open(TOKEN_FILE)
@@ -439,8 +434,9 @@ if __name__ == "__main__":
     tickers = find_option_ticker_by_expiry_date(
         token=access_token,
         stock_ticker="SBER",
-        date="20250325",
-        sleep_time=0.5
+        start_date="20260327",
+        end_date = "20260407",
+        sleep_time=1
     )
 
     print(tickers)
