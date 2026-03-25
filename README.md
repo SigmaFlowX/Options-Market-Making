@@ -28,6 +28,6 @@ It can already trade live and right now I am actively testing key components.
 4) Backtesting using historical data
 
 ## What I am going right now 
-(25/03/25) After building basics of broker interaction and a simple mm strategy, I reailized how badly I am lacking some historical orderbbok and orderflow data. 
-There is no publicly available data of this sort, so I have to collect it myself. 
-Therefore, I have deployed live data scrapper on Railway and currently waiting for couple of weeks to accumulate enough data for some analysis and backtests.
+(25/03/25) <br> After building basics of broker interaction and a simple mm strategy, I reailized how badly I am lacking some historical orderbbok and orderflow data. <br> 
+There is no publicly available data of this sort, so I have to collect it myself. <br>
+Therefore, I have deployed live data scrapper on Railway and currently waiting for couple of weeks to accumulate enough data for some analysis and backtests. <br>
