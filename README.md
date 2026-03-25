@@ -9,6 +9,12 @@ Then what is it for? <br>
 Well, first of all it's my first ever LIVE trading bot experience, so I can learn to work with brokers api and asyncio. <br>
 Secondly, I can get familiar with basic market making. 
 
+## Tools used
+1) Asyncio, aiohttp for broker API interactions
+2) Pandas for historical data analysis
+3) PostgreSQL db to store historical data
+4) Quantlib to solve Black-Scholes equation and determine option's fair prices and Greeks
+
 ## What has been done as of today 
 All the main work is in src/MM_engine.py
 1) Most of the necessary broker interactions such as placing orders, editing them, cancelling, updating inventory, opening websockets and so on.
