@@ -8,11 +8,12 @@ from datetime import datetime
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 RESTART_TIME = 7200
 DEPTH = 5
+
 postfix_list = [
-    "CC6D",
-    "C06D",
     "CD6A",
     "CP6A",
+    "CD6B",
+    "CP6B",
     "CD6",
     "CP6",
     "CD6A",
@@ -21,6 +22,7 @@ postfix_list = [
     "CP6B"
 
 ]
+
 ticker = "SR"
 min_strike = 270
 max_strike = 370
