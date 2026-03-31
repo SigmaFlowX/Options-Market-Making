@@ -1,3 +1,10 @@
+"""
+
+THIS FILE IS ONLY USED TO QUICLY TEST SOMETHING WITH BROKERS API
+FOR INSTANCE TO FIND OPTIONS TICKERS
+
+"""
+
 import requests
 from datetime import datetime, timedelta, timezone
 import uuid
