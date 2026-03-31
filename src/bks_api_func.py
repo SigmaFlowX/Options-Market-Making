@@ -130,6 +130,7 @@ def find_option_ticker_by_expiry_date(token, stock_ticker, start_date, end_date,
     print("")
 
     df = pd.DataFrame(results)
+    df.to_csv("restilts.csv")
 
     return df.loc[
         df["maturityDate"].between(start_date, end_date),
@@ -434,10 +435,11 @@ if __name__ == "__main__":
     tickers = find_option_ticker_by_expiry_date(
         token=access_token,
         stock_ticker="SBER",
-        start_date="20260402",
-        end_date = "20260411",
+        start_date="20260320",
+        end_date = "20260530",
         sleep_time=1
     )
+    tickers.to_csv("ticker.csv")
 
     print(tickers)
 
