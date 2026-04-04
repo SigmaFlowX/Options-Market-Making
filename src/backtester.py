@@ -43,6 +43,62 @@ def load_datasets(db_url, ticker):
 
     return option_df, orders_df
 
+
+def generate_orders_simple(self, best_ask, best_bid, order_size, inventory, inventory_limit, inventory_k=0):
+
+    mid = (best_bid + best_ask) / 2
+    half_spread = abs((best_ask - best_bid)) / 2
+
+    inventory_shift = inventory_k * inventory
+    center = mid - inventory_shift
+
+    bid = center - half_spread + 0.01
+    ask = center + half_spread - 0.01
+
+    bid = min(bid, best_bid)
+    ask = max(ask, best_ask)
+
+    bid_size = order_size
+    ask_size = order_size
+
+    if inventory > 0:
+        bid_size *= max(0.1, 1 - abs(inventory) / inventory_limit)
+
+    if inventory < 0:
+        ask_size *= max(0.1, 1 - abs(inventory) / inventory_limit)
+
+    bid_size = max(1, bid_size)
+    ask_size = max(1, ask_size)
+
+    if ask_size > inventory:
+        ask_size = inventory
+
+    if inventory == 0.0:
+        ask_size = 0
+    if inventory >= inventory_limit:
+        bid_size = 0
+    elif inventory <= -inventory_limit:
+        ask_size = 0
+
+    ask_order = {
+        "side": '2',
+        "price": round(ask,2),
+        "quantity": round(ask_size)
+    }
+
+    bid_order = {
+        "side": '1',
+        "price": round(bid,2),
+        "quantity": round(bid_size)
+    }
+
+    orders = []
+    if bid_size > 0 and self.inventory < self.inventory_limit:
+        orders.append(bid_order)
+    if ask_size > 0 and self.inventory > 0:
+        orders.append(ask_order)
+    return orders if orders else None
+
 def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
