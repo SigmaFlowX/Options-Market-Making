@@ -43,7 +43,6 @@ def load_datasets(db_url, ticker):
 
     return option_df, orders_df
 
-
 def generate_orders_simple(self, best_ask, best_bid, order_size, inventory, inventory_limit, inventory_k=0):
 
     mid = (best_bid + best_ask) / 2
@@ -99,11 +98,25 @@ def generate_orders_simple(self, best_ask, best_bid, order_size, inventory, inve
         orders.append(ask_order)
     return orders if orders else None
 
+def run_backtest(option_df, orders_df):
+
+    option_index = option_df.index
+    print(orders_df.index[orders_df.index.duplicated()])
+
+    for index in orders_df.index:
+        nearest = option_index[option_index.get_indexer(option_df.index, method="pad")]
+
+        break
+
+
+
 def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
     option_df, orders_df = load_datasets(url, "SR310CD6B")
+    run_backtest(option_df, orders_df)
+    #print(orders_df.head())
 
 
 if __name__ == "__main__":
