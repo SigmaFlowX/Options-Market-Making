@@ -43,7 +43,7 @@ def load_datasets(db_url, ticker):
 
     return option_df, orders_df
 
-def generate_orders_simple(self, best_ask, best_bid, order_size, inventory, inventory_limit, inventory_k=0):
+def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_limit, inventory_k=0):
 
     mid = (best_bid + best_ask) / 2
     half_spread = abs((best_ask - best_bid)) / 2
@@ -103,14 +103,27 @@ def run_backtest(option_df, orders_df):
     option_df = option_df.sort_index()
     option_df = option_df.groupby(level=0).last()
 
-    merged_df = pd.merge_asof(
+    df = pd.merge_asof(
         orders_df.reset_index(),
         option_df.reset_index(),
         on="timestamp",
         direction="backward"
         )
+    df.set_index("timestamp", inplace=True)
 
-    print(merged_df.columns)
+    inventory = 0
+    balance = 10000
+    for row in df.itertuples():
+        best_ask = row.best_ask
+        best_bid = row.best_bid
+
+        orders = generate_orders_simple(
+            best_ask,
+            best_bid,
+            order_size = 5,
+            inventory=inventory,
+            inventory_limit=100,
+        )
 
 
 
