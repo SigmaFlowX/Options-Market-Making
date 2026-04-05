@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from IPython.core.pylabtools import figsize
 from dotenv import load_dotenv
 import os
 import psycopg2
@@ -118,6 +119,10 @@ def run_backtest(option_df, orders_df):
     fee = 0.02
     balance_arr = []
     timestamp_arr = []
+    buy_prices_arr = []
+    sell_prices_arr = []
+    buy_timestamps = []
+    sell_timestamps = []
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
@@ -152,6 +157,8 @@ def run_backtest(option_df, orders_df):
 
                 balance_arr.append(balance)
                 timestamp_arr.append(row.Index)
+                sell_prices_arr.append(ask_order_price)
+                sell_timestamps.append(row.Index)
         elif row.side == "SELL":
             buy_orders = [order for order in orders if order['side'] == "1"]
             if buy_orders:
@@ -170,11 +177,20 @@ def run_backtest(option_df, orders_df):
 
                 balance_arr.append(balance)
                 timestamp_arr.append(row.Index)
+                buy_prices_arr.append(bid_order_price)
+                buy_timestamps.append(row.Index)
 
-    print(f"Final balance: {balance}")
-    plt.plot(timestamp_arr, balance_arr)
-    plt.grid()
-    plt.title("Balance over time")
+
+    print(len(buy_prices_arr))
+    print(len(sell_prices_arr))
+    figs, axs = plt.subplots(1, 2, figsize=(12, 5))
+    axs[0].plot(timestamp_arr, balance_arr)
+    axs[0].grid()
+
+    axs[1].plot(option_df.index, option_df["mid_price"], color="black")
+    axs[1].scatter(buy_timestamps, buy_prices_arr, color="green", marker="^")
+    axs[1].scatter(sell_timestamps,sell_prices_arr, color="red", marker="v")
+    plt.tight_layout()
     plt.show()
 
 
@@ -183,7 +199,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR310CD6B")
+    option_df, orders_df = load_datasets(url, "SR310CD6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
