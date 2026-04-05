@@ -148,7 +148,7 @@ def run_backtest(option_df, orders_df):
                 fill_quantity = min(executed_volume, ask_order_quantity)
 
                 inventory -= fill_quantity
-                balance += fill_quantity * ask_order_price
+                balance += fill_quantity * ask_order_price - fee * fill_quantity * ask_order_price
 
                 balance_arr.append(balance)
                 timestamp_arr.append(row.Index)
@@ -166,7 +166,7 @@ def run_backtest(option_df, orders_df):
                 fill_quantity = min(bid_order_quantity, executed_volume)
 
                 inventory += fill_quantity
-                balance -= fill_quantity * bid_order_price
+                balance -= fill_quantity * bid_order_price + fee * fill_quantity * bid_order_price
 
                 balance_arr.append(balance)
                 timestamp_arr.append(row.Index)
