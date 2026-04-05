@@ -126,7 +126,7 @@ def run_backtest(option_df, orders_df):
         orders = generate_orders_simple(
             best_ask,
             best_bid,
-            order_size = 5,
+            order_size = 10,
             inventory=inventory,
             inventory_limit=100,
         )
@@ -149,13 +149,13 @@ def run_backtest(option_df, orders_df):
                     balance -= ask_order_quantity * ask_order_price
 
                     balance_arr.append(balance)
-                    timestamp_arr.append(row.index)
+                    timestamp_arr.append(row.Index)
                 elif executed_volume < ask_order_quantity:
                     inventory -= executed_volume
                     balance -= executed_volume * ask_order_price
 
                     balance_arr.append(balance)
-                    timestamp_arr.append(row.index)
+                    timestamp_arr.append(row.Index)
         elif row.side == "SELL":
             buy_orders = [order for order in orders if order['side'] == "1"]
             if buy_orders:
@@ -171,13 +171,18 @@ def run_backtest(option_df, orders_df):
                     balance += bid_order_quantity * bid_order_price
 
                     balance_arr.append(balance)
-                    timestamp_arr.append(row.index)
+                    timestamp_arr.append(row.Index)
                 elif executed_volume < bid_order_quantity:
                     inventory += executed_volume
                     balance += executed_volume * bid_order_price
 
                     balance_arr.append(balance)
-                    timestamp_arr.append(row.index)
+                    timestamp_arr.append(row.Index)
+
+    print(f"Final balance: {balance}")
+    plt.plot(timestamp_arr, balance_arr)
+    plt.grid()
+    plt.show()
 
 
 
