@@ -92,9 +92,9 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
     }
 
     orders = []
-    if bid_size > 0 and self.inventory < self.inventory_limit:
+    if bid_size > 0 and inventory < inventory_limit:
         orders.append(bid_order)
-    if ask_size > 0 and self.inventory > 0:
+    if ask_size > 0 and inventory > 0:
         orders.append(ask_order)
     return orders if orders else None
 
