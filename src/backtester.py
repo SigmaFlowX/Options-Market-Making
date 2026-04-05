@@ -115,6 +115,7 @@ def run_backtest(option_df, orders_df):
 
     inventory = 0
     balance = 10000
+    fee = 0.02
     balance_arr = []
     timestamp_arr = []
     for row in df.itertuples():
@@ -122,7 +123,6 @@ def run_backtest(option_df, orders_df):
         best_bid = row.best_bid
         executed_price = row.price
         executed_volume = row.volume
-
         orders = generate_orders_simple(
             best_ask,
             best_bid,
@@ -146,13 +146,13 @@ def run_backtest(option_df, orders_df):
             if ask_order_price <= executed_price:
                 if executed_volume >= ask_order_quantity:
                     inventory -= ask_order_quantity
-                    balance -= ask_order_quantity * ask_order_price
+                    balance += ask_order_quantity * ask_order_price
 
                     balance_arr.append(balance)
                     timestamp_arr.append(row.Index)
                 elif executed_volume < ask_order_quantity:
                     inventory -= executed_volume
-                    balance -= executed_volume * ask_order_price
+                    balance += executed_volume * ask_order_price
 
                     balance_arr.append(balance)
                     timestamp_arr.append(row.Index)
@@ -168,17 +168,16 @@ def run_backtest(option_df, orders_df):
             if bid_order_price >= executed_price:
                 if executed_volume >= bid_order_quantity:
                     inventory += bid_order_quantity
-                    balance += bid_order_quantity * bid_order_price
+                    balance -= bid_order_quantity * bid_order_price
 
                     balance_arr.append(balance)
                     timestamp_arr.append(row.Index)
                 elif executed_volume < bid_order_quantity:
                     inventory += executed_volume
-                    balance += executed_volume * bid_order_price
+                    balance -= executed_volume * bid_order_price
 
                     balance_arr.append(balance)
                     timestamp_arr.append(row.Index)
-
     print(f"Final balance: {balance}")
     plt.plot(timestamp_arr, balance_arr)
     plt.grid()
