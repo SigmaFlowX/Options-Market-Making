@@ -139,7 +139,7 @@ def run_backtest(option_df, orders_df):
             ask_order_price = ask_order["price"]
             ask_order_quantity = ask_order["quantity"]
 
-            if ask_order_price < executed_price:
+            if ask_order_price <= executed_price:
                 if executed_volume >= ask_order_quantity:
                     inventory -= ask_order_quantity
                     balance -= ask_order_quantity * ask_order_price
@@ -155,7 +155,7 @@ def run_backtest(option_df, orders_df):
             bid_order_price = bid_order["price"]
             bid_order_quantity = bid_order["quantity"]
 
-            if bid_order_price > executed_price:
+            if bid_order_price >= executed_price:
                 if executed_volume >= bid_order_quantity:
                     inventory += bid_order_quantity
                     balance += bid_order_quantity * bid_order_price
