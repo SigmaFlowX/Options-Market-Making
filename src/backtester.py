@@ -99,14 +99,22 @@ def generate_orders_simple(self, best_ask, best_bid, order_size, inventory, inve
     return orders if orders else None
 
 def run_backtest(option_df, orders_df):
+    orders_df = orders_df.sort_index()
+    option_df = option_df.sort_index()
+    option_df = option_df.groupby(level=0).last()
 
-    option_index = option_df.index
-    print(orders_df.index[orders_df.index.duplicated()])
+    merged_df = pd.merge_asof(
+        orders_df.reset_index(),
+        option_df.reset_index(),
+        on="timestamp",
+        direction="backward"
+        )
 
-    for index in orders_df.index:
-        nearest = option_index[option_index.get_indexer(option_df.index, method="pad")]
+    print(merged_df.columns)
 
-        break
+
+
+
 
 
 
