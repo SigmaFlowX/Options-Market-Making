@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 import os
 import psycopg2
+from nbclient.client import timestamp
+
 
 def load_datasets(db_url, ticker):
     try:
@@ -113,6 +115,8 @@ def run_backtest(option_df, orders_df):
 
     inventory = 0
     balance = 10000
+    balance_arr = []
+    timestamp_arr = []
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
@@ -143,9 +147,15 @@ def run_backtest(option_df, orders_df):
                 if executed_volume >= ask_order_quantity:
                     inventory -= ask_order_quantity
                     balance -= ask_order_quantity * ask_order_price
+
+                    balance_arr.append(balance)
+                    timestamp_arr.append(row.index)
                 elif executed_volume < ask_order_quantity:
                     inventory -= executed_volume
                     balance -= executed_volume * ask_order_price
+
+                    balance_arr.append(balance)
+                    timestamp_arr.append(row.index)
         elif row.side == "SELL":
             buy_orders = [order for order in orders if order['side'] == "1"]
             if buy_orders:
@@ -159,9 +169,15 @@ def run_backtest(option_df, orders_df):
                 if executed_volume >= bid_order_quantity:
                     inventory += bid_order_quantity
                     balance += bid_order_quantity * bid_order_price
+
+                    balance_arr.append(balance)
+                    timestamp_arr.append(row.index)
                 elif executed_volume < bid_order_quantity:
                     inventory += executed_volume
                     balance += executed_volume * bid_order_price
+
+                    balance_arr.append(balance)
+                    timestamp_arr.append(row.index)
 
 
 
