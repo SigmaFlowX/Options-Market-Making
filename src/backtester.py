@@ -116,6 +116,8 @@ def run_backtest(option_df, orders_df):
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
+        executed_price = row.price
+        executed_volume = row.volume
 
         orders = generate_orders_simple(
             best_ask,
@@ -124,6 +126,31 @@ def run_backtest(option_df, orders_df):
             inventory=inventory,
             inventory_limit=100,
         )
+
+        if row.side == "BUY":
+            ask_order = [order for order in orders if order['side'] == "2"][0]
+            ask_order_price = ask_order["price"]
+            ask_order_quantity = ask_order["quantity"]
+
+            if ask_order_price < executed_price:
+                if executed_volume >= ask_order_quantity:
+                    inventory += ask_order_quantity
+                    balance += ask_order_quantity * ask_order_price
+                elif executed_volume < ask_order_quantity:
+                    inventory += executed_volume
+                    balance += executed_volume * ask_order_price
+        elif row.side == "SELL":
+            bid_order = [order for order in orders if order['side'] == "1"][0]
+            bid_order_price = bid_order["price"]
+            bid_order_quantity = bid_order["quantity"]
+
+            if bid_order_price > executed_price:
+                if executed_volume >= bid_order_quantity:
+                    inventory -= bid_order_quantity
+                    balance -= bid_order_quantity * bid_order_price
+                elif executed_volume < bid_order_quantity:
+                    inventory -= executed_volume
+                    balance -= executed_volume * bid_order_price
 
 
 
