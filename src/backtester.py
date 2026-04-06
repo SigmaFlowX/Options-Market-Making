@@ -136,6 +136,8 @@ def run_backtest(option_df, orders_df):
             inventory_limit=100,
         )
 
+        print(row.side, executed_price, best_bid, best_ask)
+
         if len(orders) == 0:
             continue
 
@@ -181,15 +183,15 @@ def run_backtest(option_df, orders_df):
                 buy_timestamps.append(row.Index)
 
 
-    print(len(buy_prices_arr))
-    print(len(sell_prices_arr))
     figs, axs = plt.subplots(1, 2, figsize=(12, 5))
     axs[0].plot(timestamp_arr, balance_arr)
     axs[0].grid()
+    axs[0].set_title("Balance over time")
 
     axs[1].plot(option_df.index, option_df["mid_price"], color="black")
     axs[1].scatter(buy_timestamps, buy_prices_arr, color="green", marker="^")
     axs[1].scatter(sell_timestamps,sell_prices_arr, color="red", marker="v")
+    axs[1].set_title("Trades")
     plt.tight_layout()
     plt.show()
 
