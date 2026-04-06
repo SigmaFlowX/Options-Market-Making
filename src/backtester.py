@@ -204,6 +204,11 @@ def run_backtest(option_df, orders_df):
     axs[1, 0].tick_params(axis='x', labelrotation=45)
     axs[1, 0].grid()
 
+    axs[1, 1].plot(df.index, df['spread'])
+    axs[1, 1].set_title("Spread over time")
+    axs[1, 1].tick_params(axis='x', labelrotation=45)
+    axs[1, 1].grid()
+
 
     plt.tight_layout()
     plt.show()
