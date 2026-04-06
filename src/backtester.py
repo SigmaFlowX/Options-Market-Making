@@ -187,11 +187,14 @@ def run_backtest(option_df, orders_df):
     axs[0].plot(timestamp_arr, balance_arr)
     axs[0].grid()
     axs[0].set_title("Balance over time")
+    axs[0].tick_params(axis='x', labelrotation=45)
 
     axs[1].plot(option_df.index, option_df["mid_price"], color="black")
     axs[1].scatter(buy_timestamps, buy_prices_arr, color="green", marker="^")
     axs[1].scatter(sell_timestamps,sell_prices_arr, color="red", marker="v")
     axs[1].set_title("Trades")
+    axs[1].tick_params(axis='x', labelrotation=45)
+    axs[1].grid()
     plt.tight_layout()
     plt.show()
 
