@@ -1,10 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from IPython.core.pylabtools import figsize
 from dotenv import load_dotenv
 import os
 import psycopg2
-from nbclient.client import timestamp
+import math
 
 
 def load_datasets(db_url, ticker):
@@ -57,8 +56,8 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
     bid = center - half_spread + 0.01
     ask = center + half_spread - 0.01
 
-    bid = min(bid, best_bid)
-    ask = max(ask, best_ask)
+    #bid = min(bid, best_bid)
+    #ask = max(ask, best_ask)
 
     bid_size = order_size
     ask_size = order_size
@@ -84,7 +83,7 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
 
     ask_order = {
         "side": '2',
-        "price": round(ask,2),
+        "price": round(ask, 2),
         "quantity": round(ask_size)
     }
 
@@ -99,6 +98,7 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
         orders.append(bid_order)
     if ask_size > 0 and inventory > 0:
         orders.append(ask_order)
+        print(f"Ask order generated: {ask_order}, best_ask = {best_ask}")
     return orders if orders else None
 
 def run_backtest(option_df, orders_df):
@@ -138,7 +138,7 @@ def run_backtest(option_df, orders_df):
             inventory_limit=100000,
         )
 
-        print(row.side, executed_price, best_bid, best_ask)
+        #print(row.side, executed_price, best_bid, best_ask)
         inventory_arr.append(inventory)
         if len(orders) == 0:
             continue
@@ -146,6 +146,7 @@ def run_backtest(option_df, orders_df):
         if row.side == "BUY":
             sell_orders = [order for order in orders if order['side'] == "2"]
             if sell_orders:
+                print(f"Current orders: {orders} \n Executed price of buy order: {executed_price}")
                 ask_order = sell_orders[0]
             else:
                 continue
@@ -218,7 +219,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR310CD6")
+    option_df, orders_df = load_datasets(url, "SR320CD6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
