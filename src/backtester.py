@@ -135,7 +135,7 @@ def run_backtest(option_df, orders_df):
             best_bid,
             order_size = 10,
             inventory=inventory,
-            inventory_limit=100,
+            inventory_limit=100000,
         )
 
         print(row.side, executed_price, best_bid, best_ask)
@@ -185,7 +185,6 @@ def run_backtest(option_df, orders_df):
                 buy_timestamps.append(row.Index)
 
 
-
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
     axs[0, 0].plot(timestamp_arr, balance_arr)
     axs[0, 0].grid()
@@ -204,7 +203,7 @@ def run_backtest(option_df, orders_df):
     axs[1, 0].tick_params(axis='x', labelrotation=45)
     axs[1, 0].grid()
 
-    axs[1, 1].plot(df.index, df['spread'])
+    axs[1, 1].scatter(df.index, df['spread'])
     axs[1, 1].set_title("Spread over time")
     axs[1, 1].tick_params(axis='x', labelrotation=45)
     axs[1, 1].grid()
