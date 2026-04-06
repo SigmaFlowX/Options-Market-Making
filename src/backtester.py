@@ -123,6 +123,8 @@ def run_backtest(option_df, orders_df):
     sell_prices_arr = []
     buy_timestamps = []
     sell_timestamps = []
+    inventory_arr = []
+
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
@@ -137,7 +139,7 @@ def run_backtest(option_df, orders_df):
         )
 
         print(row.side, executed_price, best_bid, best_ask)
-
+        inventory_arr.append(inventory)
         if len(orders) == 0:
             continue
 
@@ -183,7 +185,8 @@ def run_backtest(option_df, orders_df):
                 buy_timestamps.append(row.Index)
 
 
-    figs, axs = plt.subplots(1, 2, figsize=(12, 5))
+
+    figs, axs = plt.subplots(1, 3, figsize=(12, 5))
     axs[0].plot(timestamp_arr, balance_arr)
     axs[0].grid()
     axs[0].set_title("Balance over time")
@@ -195,6 +198,13 @@ def run_backtest(option_df, orders_df):
     axs[1].set_title("Trades")
     axs[1].tick_params(axis='x', labelrotation=45)
     axs[1].grid()
+
+    axs[2].plot(df.index, inventory_arr)
+    axs[2].set_title("Inventory over time")
+    axs[2].tick_params(axis='x', labelrotation=45)
+    axs[2].grid()
+
+
     plt.tight_layout()
     plt.show()
 
