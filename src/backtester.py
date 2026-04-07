@@ -115,7 +115,7 @@ def run_backtest(option_df, orders_df):
     df.set_index("timestamp", inplace=True)
 
     inventory = 0
-    balance = 10000
+    balance = 100000
     fee = 0.02
     balance_arr = []
     timestamp_arr = []
@@ -133,7 +133,7 @@ def run_backtest(option_df, orders_df):
         orders = generate_orders_simple(
             best_ask,
             best_bid,
-            order_size = 10,
+            order_size = 1000,
             inventory=inventory,
             inventory_limit=100000,
         )
@@ -219,7 +219,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR320CD6")
+    option_df, orders_df = load_datasets(url, "SR320CP6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
