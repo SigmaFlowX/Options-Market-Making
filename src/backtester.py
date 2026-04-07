@@ -153,7 +153,7 @@ def run_backtest(option_df, orders_df):
             ask_order_price = ask_order["price"]
             ask_order_quantity = ask_order["quantity"]
 
-            if ask_order_price <= executed_price:
+            if ask_order_price <= best_ask:
 
                 fill_quantity = min(executed_volume, ask_order_quantity)
 
@@ -173,7 +173,7 @@ def run_backtest(option_df, orders_df):
             bid_order_price = bid_order["price"]
             bid_order_quantity = bid_order["quantity"]
 
-            if bid_order_price >= executed_price:
+            if bid_order_price >= best_bid:
 
                 fill_quantity = min(bid_order_quantity, executed_volume)
 
