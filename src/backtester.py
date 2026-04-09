@@ -116,7 +116,7 @@ def run_backtest(option_df, orders_df):
 
     inventory = 0
     balance = 100000
-    fee = 0.0
+    fee = 0.02
     balance_arr = []
     timestamp_arr = []
     buy_prices_arr = []
@@ -124,12 +124,15 @@ def run_backtest(option_df, orders_df):
     buy_timestamps = []
     sell_timestamps = []
     inventory_arr = []
+    equity_arr = []
 
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
         executed_price = row.price
         executed_volume = row.volume
+        mid = (best_bid + best_ask) /2
+
         orders = generate_orders_simple(
             best_ask,
             best_bid,
@@ -146,6 +149,7 @@ def run_backtest(option_df, orders_df):
             inventory_arr.append(inventory)
             sell_prices_arr.append(best_bid)
             sell_timestamps.append(row.Index)
+            equity_arr.append(balance + inventory * mid)
             break
 
 
@@ -175,6 +179,7 @@ def run_backtest(option_df, orders_df):
                 timestamp_arr.append(row.Index)
                 sell_prices_arr.append(ask_order_price)
                 sell_timestamps.append(row.Index)
+                equity_arr.append(balance + inventory * mid)
         elif row.side == "SELL":
             buy_orders = [order for order in orders if order['side'] == "1"]
             if buy_orders:
@@ -195,9 +200,10 @@ def run_backtest(option_df, orders_df):
                 timestamp_arr.append(row.Index)
                 buy_prices_arr.append(bid_order_price)
                 buy_timestamps.append(row.Index)
+                equity_arr.append(balance + inventory * mid)
 
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
+    fig, axs = plt.subplots(2, 3, figsize=(12, 8))
     axs[0, 0].plot(timestamp_arr, balance_arr)
     axs[0, 0].grid()
     axs[0, 0].set_title("Balance over time")
@@ -230,7 +236,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR321CD6")
+    option_df, orders_df = load_datasets(url, "SR310CD6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
