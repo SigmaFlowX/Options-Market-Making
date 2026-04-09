@@ -101,7 +101,7 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
         print(f"Ask order generated: {ask_order}, best_ask = {best_ask}")
     return orders if orders else None
 
-def run_backtest(option_df, orders_df):
+def run_backtest(option_df, orders_df, fee=0.02):
     orders_df = orders_df.sort_index()
     option_df = option_df.sort_index()
     option_df = option_df.groupby(level=0).last()
@@ -116,7 +116,6 @@ def run_backtest(option_df, orders_df):
 
     inventory = 0
     balance = 100000
-    fee = 0.02
     balance_arr = []
     timestamp_arr = []
     buy_prices_arr = []
@@ -243,8 +242,8 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR320CD6")
-    run_backtest(option_df, orders_df)
+    option_df, orders_df = load_datasets(url, "SR320CD6A")
+    run_backtest(option_df, orders_df, fee=0.02)
     #print(orders_df.head())
 
 
