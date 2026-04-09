@@ -230,7 +230,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR320CD6")
+    option_df, orders_df = load_datasets(url, "SR321CD6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
