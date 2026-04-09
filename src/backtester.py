@@ -141,12 +141,14 @@ def run_backtest(option_df, orders_df):
             inventory_limit=100000,
         )
 
+        inventory_arr.append(inventory)
+
         if row.Index == df.index[-1]:
             balance += inventory * best_bid
             inventory = 0
             balance_arr.append(balance)
             timestamp_arr.append(row.Index)
-            inventory_arr.append(inventory)
+            inventory_arr[-1] = inventory
             sell_prices_arr.append(best_bid)
             sell_timestamps.append(row.Index)
             equity_arr.append(balance + inventory * mid)
@@ -154,7 +156,7 @@ def run_backtest(option_df, orders_df):
 
 
         #print(row.side, executed_price, best_bid, best_ask)
-        inventory_arr.append(inventory)
+
         if len(orders) == 0:
             continue
 
@@ -241,7 +243,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR310CD6")
+    option_df, orders_df = load_datasets(url, "SR320CD6")
     run_backtest(option_df, orders_df)
     #print(orders_df.head())
 
