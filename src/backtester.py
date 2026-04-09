@@ -144,7 +144,7 @@ def run_backtest(option_df, orders_df):
         inventory_arr.append(inventory)
 
         if row.Index == df.index[-1]:
-            balance += inventory * best_bid
+            balance += inventory * best_bid - 0.02 * inventory * best_bid
             inventory = 0
             balance_arr.append(balance)
             timestamp_arr.append(row.Index)
