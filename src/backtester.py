@@ -116,7 +116,7 @@ def run_backtest(option_df, orders_df):
 
     inventory = 0
     balance = 100000
-    fee = 0.02
+    fee = 0.0
     balance_arr = []
     timestamp_arr = []
     buy_prices_arr = []
@@ -137,6 +137,17 @@ def run_backtest(option_df, orders_df):
             inventory=inventory,
             inventory_limit=100000,
         )
+
+        if row.Index == df.index[-1]:
+            balance += inventory * best_bid
+            inventory = 0
+            balance_arr.append(balance)
+            timestamp_arr.append(row.Index)
+            inventory_arr.append(inventory)
+            sell_prices_arr.append(best_bid)
+            sell_timestamps.append(row.Index)
+            break
+
 
         #print(row.side, executed_price, best_bid, best_ask)
         inventory_arr.append(inventory)
