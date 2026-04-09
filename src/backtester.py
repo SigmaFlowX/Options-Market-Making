@@ -226,6 +226,11 @@ def run_backtest(option_df, orders_df):
     axs[1, 1].tick_params(axis='x', labelrotation=45)
     axs[1, 1].grid()
 
+    axs[0, 2].plot(timestamp_arr, equity_arr)
+    axs[0, 2].grid()
+    axs[0, 2].set_title("Equity over time (inventory value is based on mid price)")
+    axs[0, 2].tick_params(axis='x', labelrotation=45)
+
 
     plt.tight_layout()
     plt.show()
