@@ -10,13 +10,10 @@ RESTART_TIME = 7200
 DEPTH = 5
 
 postfix_list = [
-    "CD6", #04-15
-    "CP6",
-    "CP6D", #04-22
-    "CD6D",
     "CD6E", #04-29
     "CP6E",
-
+    "CE6B", #05-13
+    "CQ6B",
     "CQ6A", #05-06
     "CE6A",
     "CE6", #05-20
