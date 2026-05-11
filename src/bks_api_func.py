@@ -443,7 +443,7 @@ if __name__ == "__main__":
         token=access_token,
         stock_ticker="SBER",
         start_date="20260320",
-        end_date = "20260530",
+        end_date = "20260730",
         sleep_time=1
     )
     tickers.to_csv("ticker.csv")
