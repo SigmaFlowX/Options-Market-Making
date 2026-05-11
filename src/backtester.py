@@ -135,6 +135,8 @@ def run_backtest(option_df, orders_df, fee=0.02, plot=False):
     for row in df.itertuples():
         best_ask = row.best_ask
         best_bid = row.best_bid
+        if best_ask is None or best_bid is None:
+            continue
         executed_price = row.price
         executed_volume = row.volume
         mid = (best_bid + best_ask) /2
