@@ -236,6 +236,8 @@ def run_backtest(option_df, orders_df, fee=0.02, plot=False):
         plt.tight_layout()
         plt.show()
 
+    return equity_arr[-1]
+
 
 
 def main():
