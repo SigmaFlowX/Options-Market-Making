@@ -121,7 +121,8 @@ def run_backtest(option_df, orders_df, fee=0.02, plot=False):
     df.set_index("timestamp", inplace=True)
 
     inventory = 0
-    balance = 100000
+    initial_balance = 10000
+    balance = initial_balance
     balance_arr = []
     timestamp_arr = []
     buy_prices_arr = []
@@ -241,7 +242,7 @@ def run_backtest(option_df, orders_df, fee=0.02, plot=False):
         plt.tight_layout()
         plt.show()
 
-    return equity_arr[-1] if len(equity_arr) != 0  else 0
+    return (equity_arr[-1] - initial_balance)/initial_balance  if len(equity_arr) != 0  else 0
 
 
 
