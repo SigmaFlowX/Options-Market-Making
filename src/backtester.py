@@ -2,14 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 import os
-import psycopg2
+from sqlalchemy import create_engine
 
 
 
 def load_datasets(db_url, ticker):
     try:
-        conn = psycopg2.connect(db_url, sslmode="require")
-        cur = conn.cursor()
+        engine = create_engine(db_url)
     except Exception as e:
         print("Exception while connecting to db")
         raise
@@ -22,7 +21,7 @@ def load_datasets(db_url, ticker):
     WHERE ticker = '{ticker}'
     """
 
-    option_df = pd.read_sql_query(query, conn)
+    option_df = pd.read_sql_query(query, con=engine)
     option_df['timestamp'] = pd.to_datetime(option_df['timestamp'])
     option_df.set_index('timestamp', inplace=True)
 
@@ -39,7 +38,7 @@ def load_datasets(db_url, ticker):
     WHERE ticker = '{ticker}'
     """
 
-    orders_df = pd.read_sql_query(query, conn)
+    orders_df = pd.read_sql_query(query, con=engine)
     orders_df['timestamp'] = pd.to_datetime(orders_df['timestamp'])
     orders_df.set_index('timestamp', inplace=True)
 
