@@ -102,7 +102,7 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
         orders.append(ask_order)
     return orders if orders else None
 
-def run_backtest(option_df, orders_df, fee=0.02):
+def run_backtest(option_df, orders_df, fee=0.02, plot=False):
     orders_df = orders_df.sort_index()
     option_df = option_df.sort_index()
     option_df = option_df.groupby(level=0).last()
@@ -203,38 +203,38 @@ def run_backtest(option_df, orders_df, fee=0.02):
                 buy_timestamps.append(row.Index)
                 equity_arr.append(balance + inventory * mid)
 
+    if plot:
+        fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+        axs[0, 0].plot(timestamp_arr, balance_arr)
+        axs[0, 0].grid()
+        axs[0, 0].set_title("Balance over time")
+        axs[0, 0].tick_params(axis='x', labelrotation=45)
 
-    fig, axs = plt.subplots(2, 3, figsize=(12, 8))
-    axs[0, 0].plot(timestamp_arr, balance_arr)
-    axs[0, 0].grid()
-    axs[0, 0].set_title("Balance over time")
-    axs[0, 0].tick_params(axis='x', labelrotation=45)
+        axs[0, 1].plot(option_df.index, option_df["mid_price"], color="black")
+        axs[0, 1].scatter(buy_timestamps, buy_prices_arr, color="green", marker="^")
+        axs[0, 1].scatter(sell_timestamps,sell_prices_arr, color="red", marker="v")
+        axs[0, 1].set_title("Trades")
+        axs[0, 1].tick_params(axis='x', labelrotation=45)
+        axs[0, 1].grid()
 
-    axs[0, 1].plot(option_df.index, option_df["mid_price"], color="black")
-    axs[0, 1].scatter(buy_timestamps, buy_prices_arr, color="green", marker="^")
-    axs[0, 1].scatter(sell_timestamps,sell_prices_arr, color="red", marker="v")
-    axs[0, 1].set_title("Trades")
-    axs[0, 1].tick_params(axis='x', labelrotation=45)
-    axs[0, 1].grid()
+        axs[1, 0].plot(df.index, inventory_arr)
+        axs[1, 0].set_title("Inventory over time")
+        axs[1, 0].tick_params(axis='x', labelrotation=45)
+        axs[1, 0].grid()
 
-    axs[1, 0].plot(df.index, inventory_arr)
-    axs[1, 0].set_title("Inventory over time")
-    axs[1, 0].tick_params(axis='x', labelrotation=45)
-    axs[1, 0].grid()
+        axs[1, 1].scatter(df.index, df['spread'])
+        axs[1, 1].set_title("Spread over time")
+        axs[1, 1].tick_params(axis='x', labelrotation=45)
+        axs[1, 1].grid()
 
-    axs[1, 1].scatter(df.index, df['spread'])
-    axs[1, 1].set_title("Spread over time")
-    axs[1, 1].tick_params(axis='x', labelrotation=45)
-    axs[1, 1].grid()
-
-    axs[0, 2].plot(timestamp_arr, equity_arr)
-    axs[0, 2].grid()
-    axs[0, 2].set_title("Equity over time (inventory value is based on mid price)")
-    axs[0, 2].tick_params(axis='x', labelrotation=45)
+        axs[0, 2].plot(timestamp_arr, equity_arr)
+        axs[0, 2].grid()
+        axs[0, 2].set_title("Equity over time (inventory value is based on mid price)")
+        axs[0, 2].tick_params(axis='x', labelrotation=45)
 
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
 
 
@@ -243,7 +243,7 @@ def main():
     url = os.getenv("DATABASE_URL")
 
     option_df, orders_df = load_datasets(url, "SR300CD6")
-    run_backtest(option_df, orders_df, fee=0.00)
+    run_backtest(option_df, orders_df, fee=0.00, plot=True)
     #print(orders_df.head())
 
 
