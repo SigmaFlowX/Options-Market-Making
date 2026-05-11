@@ -43,6 +43,8 @@ def load_datasets(db_url, ticker):
     orders_df['timestamp'] = pd.to_datetime(orders_df['timestamp'])
     orders_df.set_index('timestamp', inplace=True)
 
+    orders_df['price'] = orders_df['volume'] / orders_df['price']
+
     return option_df, orders_df
 
 def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_limit, inventory_k=0):
@@ -242,7 +244,7 @@ def main():
     load_dotenv()
     url = os.getenv("DATABASE_URL")
 
-    option_df, orders_df = load_datasets(url, "SR320CD6A")
+    option_df, orders_df = load_datasets(url, "SR300CD6")
     run_backtest(option_df, orders_df, fee=0.02)
     #print(orders_df.head())
 
