@@ -100,7 +100,6 @@ def generate_orders_simple(best_ask, best_bid, order_size, inventory, inventory_
         orders.append(bid_order)
     if ask_size > 0 and inventory > 0:
         orders.append(ask_order)
-        print(f"Ask order generated: {ask_order}, best_ask = {best_ask}")
     return orders if orders else None
 
 def run_backtest(option_df, orders_df, fee=0.02):
@@ -164,7 +163,6 @@ def run_backtest(option_df, orders_df, fee=0.02):
         if row.side == "BUY":
             sell_orders = [order for order in orders if order['side'] == "2"]
             if sell_orders:
-                print(f"Current orders: {orders} \n Executed price of buy order: {executed_price}")
                 ask_order = sell_orders[0]
             else:
                 continue
@@ -245,7 +243,7 @@ def main():
     url = os.getenv("DATABASE_URL")
 
     option_df, orders_df = load_datasets(url, "SR300CD6")
-    run_backtest(option_df, orders_df, fee=0.02)
+    run_backtest(option_df, orders_df, fee=0.00)
     #print(orders_df.head())
 
 
