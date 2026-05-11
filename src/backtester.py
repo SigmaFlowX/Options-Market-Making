@@ -107,6 +107,11 @@ def run_backtest(option_df, orders_df, fee=0.02, plot=False):
     option_df = option_df.sort_index()
     option_df = option_df.groupby(level=0).last()
 
+    orders_df.index = pd.to_datetime(orders_df.index).tz_localize(None)
+    option_df.index = pd.to_datetime(option_df.index).tz_localize(None)
+    orders_df.index = orders_df.index.astype("datetime64[us]")
+    option_df.index = option_df.index.astype("datetime64[us]")
+
     df = pd.merge_asof(
         orders_df.reset_index(),
         option_df.reset_index(),
