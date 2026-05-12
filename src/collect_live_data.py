@@ -14,12 +14,12 @@ postfix_list = [
     "CQ6D"
     "CE6B", #05-13
     "CQ6B",
-    "CQ6A", #05-06
-    "CE6A",
     "CE6", #05-20
     "CQ6",
     "CF6", #06-17
-    "CR6"
+    "CR6",
+    "CF6A",    #06-03
+    "CR6A"
 ]
 
 ticker = "SR"
