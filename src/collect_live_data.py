@@ -12,8 +12,6 @@ DEPTH = 5
 postfix_list = [
     "CE6D", #05-27
     "CQ6D"
-    "CE6", #05-20
-    "CQ6",
     "CF6", #06-17
     "CR6",
     "CF6A", #06-03
