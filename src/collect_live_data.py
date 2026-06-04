@@ -10,14 +10,12 @@ RESTART_TIME = 7200
 DEPTH = 5
 
 postfix_list = [
-    "CE6D", #05-27
-    "CQ6D",
     "CF6B", #06-10
     "CR6B",
     "CF6", #06-17
     "CR6",
-    "CF6A", #06-03
-    "CR6A"
+    "CF6D", #06-24
+    "CR6D"
 ]
 
 ticker = "SR"
