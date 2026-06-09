@@ -15,7 +15,9 @@ postfix_list = [
     "CF6", #06-17
     "CR6",
     "CF6D", #06-24
-    "CR6D"
+    "CR6D",
+    "CG6A",
+    "CS6A"
 ]
 
 ticker = "SR"
